@@ -1,0 +1,390 @@
+<title>Merchant Console — Ootle Private Pay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f6f9; --surface: #ffffff; --surface-2: #edecf2; --border: #dcdae3;
+    --text: #16141c; --text-dim: #68657a;
+    --accent: #9c6a12; --accent-ink: #ffffff; --accent-dim: #f3ead6;
+    --ok: #157a4d; --ok-bg: #e4f5ec;
+    --err: #b91c34; --err-bg: #fbe7ea;
+    --pending: #a3620a; --pending-bg: #faf0dd;
+    --focus: #9c6a12;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
+      --text: #e9e6f0; --text-dim: #9b96a9;
+      --accent: #dba14a; --accent-ink: #241a06; --accent-dim: #2c210d;
+      --ok: #4bd39a; --ok-bg: #16281f;
+      --err: #ff8a97; --err-bg: #34151b;
+      --pending: #f2b544; --pending-bg: #33270f;
+      --focus: #dba14a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
+    --text: #e9e6f0; --text-dim: #9b96a9;
+    --accent: #dba14a; --accent-ink: #241a06; --accent-dim: #2c210d;
+    --ok: #4bd39a; --ok-bg: #16281f;
+    --err: #ff8a97; --err-bg: #34151b;
+    --pending: #f2b544; --pending-bg: #33270f;
+    --focus: #dba14a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif; line-height: 1.5; }
+  a { color: inherit; }
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  nav.top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  .wordmark { font-size: 0.86rem; font-weight: 600; display: flex; align-items: center; gap: 9px; }
+  .wordmark .bracket { color: var(--accent); }
+  nav.top .links { display: flex; gap: 22px; font-size: 0.8rem; }
+  nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; }
+  nav.top .links a.active { color: var(--text); border-color: var(--accent); }
+  nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); }
+  nav.top .net .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+
+  .shell { max-width: 880px; margin: 0 auto; padding: 40px 28px 72px; }
+
+  h1.page { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.3rem; font-weight: 600; margin: 0 0 4px; }
+  p.page-note { color: var(--text-dim); font-size: 0.9rem; margin: 0 0 28px; max-width: 60ch; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 22px 24px; margin-bottom: 18px;
+  }
+  .card h2 { font-size: 0.98rem; font-weight: 600; margin: 0 0 14px; }
+  .card h2 .sub { font-weight: 400; color: var(--text-dim); font-size: 0.82rem; display: block; margin-top: 2px; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 22px; }
+  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { background: var(--surface); padding: 16px 18px; }
+  .stat .label { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+  .stat .value { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.3rem; font-weight: 600; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .stat .value.tier-Basic { color: var(--text-dim); }
+  .stat .value.tier-Standard { color: var(--accent); }
+  .stat .value.tier-Premium { color: var(--ok); }
+
+  label { display: block; font-size: 0.76rem; color: var(--text-dim); margin-top: 12px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  input {
+    width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 5px; padding: 9px 11px; margin-top: 5px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.86rem;
+  }
+  input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .row { display: flex; gap: 12px; } .row > * { flex: 1; }
+
+  button {
+    margin-top: 16px; padding: 9px 17px; border-radius: 5px; border: none;
+    background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 0.86rem;
+    cursor: pointer; font-family: "IBM Plex Sans", sans-serif;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button:hover:not(:disabled) { filter: brightness(1.08); }
+  button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  button.ghost { background: transparent; color: var(--accent); padding: 4px 8px; margin-top: 0; font-size: 0.78rem; }
+
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-family: "IBM Plex Mono", ui-monospace, monospace; margin-top: 12px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--text-dim); }
+  .status:empty { display: none; }
+  .status.ok { background: var(--ok-bg); color: var(--ok); }
+  .status.err { background: var(--err-bg); color: var(--err); }
+  .status.pending { background: var(--pending-bg); color: var(--pending); }
+
+  .log { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px; margin-top: 10px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.76rem; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto; color: var(--text-dim); }
+
+  table.plans { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  table.plans th { text-align: left; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); padding: 0 10px 8px 0; border-bottom: 1px solid var(--border); font-weight: 500; }
+  table.plans td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  table.plans tr:last-child td { border-bottom: none; }
+  .empty-note { font-size: 0.84rem; color: var(--text-dim); padding: 6px 0; }
+
+  #appPanels { display: none; }
+  dl.kv { margin: 10px 0 0; font-size: 0.84rem; }
+  dl.kv dt { color: var(--text-dim); font-size: 0.74rem; margin-top: 8px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  dl.kv dd { margin: 2px 0 0; font-family: "IBM Plex Mono", ui-monospace, monospace; word-break: break-all; }
+</style>
+
+<nav class="top">
+  <div class="wordmark"><span class="bracket">[</span>OOTLE PRIVATE PAY<span class="bracket">]</span></div>
+  <div class="links">
+    <a href="https://matteozero.github.io/ootle-private-pay/index.html">Overview</a>
+    <a href="https://matteozero.github.io/ootle-private-pay/merchant.html" class="active">Merchant Console</a>
+    <a href="https://matteozero.github.io/ootle-private-pay/pay.html">Pay</a>
+  </div>
+  <div class="net"><span class="dot"></span> esme testnet</div>
+</nav>
+
+<div class="shell">
+  <h1 class="page">Merchant Console</h1>
+  <p class="page-note">Register your stake, publish subscription plans, and claim what your customers have paid.</p>
+
+  <div id="connectPanel" class="card">
+    <h2>Connect your wallet daemon</h2>
+    <label for="daemonUrl">Wallet daemon JSON-RPC URL</label>
+    <input id="daemonUrl" value="http://127.0.0.1:5100/json_rpc" />
+    <button id="connectBtn">Connect</button>
+    <div id="connectStatus" class="status"></div>
+  </div>
+
+  <div id="appPanels">
+    <div class="stats">
+      <div class="stat"><div class="label">Your tier</div><div class="value" id="statTier">—</div></div>
+      <div class="stat"><div class="label">Staked</div><div class="value" id="statStaked">—</div></div>
+      <div class="stat"><div class="label">Fee pot (private_pay)</div><div class="value" id="statFeePot">—</div></div>
+      <div class="stat"><div class="label">Treasury (registry)</div><div class="value" id="statTreasury">—</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Register &amp; stake<span class="sub">One-time — stake more anytime with the same form to raise your tier (1× min = Basic, 5× = Standard, 20× = Premium).</span></h2>
+      <label for="stakeAmount">Amount (XTR)</label>
+      <input id="stakeAmount" value="1000" />
+      <div class="row">
+        <button id="registerBtn">Register</button>
+        <button id="addStakeBtn" class="secondary">Add stake</button>
+        <button id="refreshStatsBtn" class="secondary">Refresh stats</button>
+      </div>
+      <div id="registerStatus" class="status"></div>
+      <div id="registerLog" class="log" style="display:none"></div>
+    </div>
+
+    <div class="card">
+      <h2>Subscription plans<span class="sub">Create a plan once, then advance its billing period whenever your cycle rolls over — there's no on-chain clock, so this is on you (e.g. a monthly cron).</span></h2>
+      <label for="planPrice">Price per period (XTR)</label>
+      <input id="planPrice" value="50" />
+      <button id="createPlanBtn">Create plan</button>
+      <div id="createPlanStatus" class="status"></div>
+
+      <table class="plans" id="plansTable" style="margin-top:16px; display:none">
+        <tr><th>Plan</th><th>Price</th><th>Period</th><th>Revenue</th><th></th></tr>
+      </table>
+      <div class="empty-note" id="plansEmpty">No plans yet — create one above.</div>
+    </div>
+
+    <div class="card">
+      <h2>Merchant identity</h2>
+      <dl class="kv">
+        <dt>Public key (share this with customers)</dt><dd id="accountPk"></dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
+<script>
+  const REGISTRY = "component_1d32aca29e61e70736d16f3e2603dffb6eb7859cfda60ab09977da73711aa7ed";
+  const PRIVATE_PAY = "component_478fd847553b9e896324b641fa3f60200d2f37ae04699c3628f09062f2fdc623";
+  const SUBSCRIPTION = "component_9addab1f01ebf52a7bc95db6fe2b54a00878ce305c6d2c62761eac4f70c6c475";
+  const PLANS_KEY = "ootlePrivatePay.merchantPlans";
+
+  let daemonUrl = "", authToken = "", accountAddress = "", accountPublicKey = "", rpcId = 1;
+
+  async function rpc(method, params) {
+    const res = await fetch(daemonUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(authToken ? { Authorization: "Bearer " + authToken } : {}) },
+      body: JSON.stringify({ jsonrpc: "2.0", id: rpcId++, method, params }),
+    });
+    const body = await res.json();
+    if (body.error) throw new Error(body.error.message || JSON.stringify(body.error));
+    return body.result;
+  }
+
+  async function submitManifestAndWait(manifest, variables) {
+    const submitted = await rpc("transactions.submit_manifest", {
+      manifest, variables, seal_signer_key_id: null, signing_key_ids: [], max_fee: 100000, dry_run: false, blobs: {},
+    });
+    return rpc("transactions.wait_result", { transaction_id: submitted.transaction_id, timeout_secs: 60 });
+  }
+
+  function readScalar(result) {
+    const finalize = result && result.result;
+    if (!finalize || !finalize.execution_results.length) return null;
+    return finalize.execution_results[finalize.execution_results.length - 1].indexed.value;
+  }
+  function eventsSummary(result) {
+    const finalize = result && result.result;
+    if (!finalize) return "(no result yet — status: " + (result ? result.status : "?") + ")";
+    return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
+  }
+  function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
+  function showLog(el, text) { el.style.display = "block"; el.textContent = text; }
+
+  function loadPlans() {
+    try { return JSON.parse(localStorage.getItem(PLANS_KEY) || "[]"); } catch { return []; }
+  }
+  function savePlans(plans) { localStorage.setItem(PLANS_KEY, JSON.stringify(plans)); }
+
+  async function refreshStats() {
+    try {
+      const tierRaw = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    registry.get_tier(PublicKey("${accountPublicKey}"));\n}`,
+        { registry: REGISTRY }
+      );
+      const tier = readScalar(tierRaw);
+      const tierEl = document.getElementById("statTier");
+      tierEl.textContent = tier || "unregistered";
+      tierEl.className = "value" + (tier ? " tier-" + tier : "");
+
+      const infoRaw = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    registry.get_merchant_info(PublicKey("${accountPublicKey}"));\n}`,
+        { registry: REGISTRY }
+      );
+      const info = readScalar(infoRaw);
+      document.getElementById("statStaked").textContent = info ? info[0] + " XTR" : "—";
+    } catch {
+      document.getElementById("statTier").textContent = "unregistered";
+    }
+
+    try {
+      const feeRaw = await submitManifestAndWait(`fn main() {\n    let pay = var!["pay"];\n    pay.fee_pot_balance();\n}`, { pay: PRIVATE_PAY });
+      document.getElementById("statFeePot").textContent = readScalar(feeRaw) + " XTR";
+    } catch {}
+    try {
+      const treasuryRaw = await submitManifestAndWait(`fn main() {\n    let registry = var!["registry"];\n    registry.treasury_balance();\n}`, { registry: REGISTRY });
+      document.getElementById("statTreasury").textContent = readScalar(treasuryRaw) + " XTR";
+    } catch {}
+  }
+
+  async function refreshPlanRevenue(plan) {
+    try {
+      const raw = await submitManifestAndWait(
+        `fn main() {\n    let subs = var!["subs"];\n    subs.is_active(${plan.id}u32, "__revenue_probe__");\n}`,
+        { subs: SUBSCRIPTION }
+      );
+      return null; // is_active doesn't expose revenue; kept for future use.
+    } catch { return null; }
+  }
+
+  function renderPlans() {
+    const plans = loadPlans();
+    const table = document.getElementById("plansTable");
+    const empty = document.getElementById("plansEmpty");
+    if (plans.length === 0) { table.style.display = "none"; empty.style.display = "block"; return; }
+    empty.style.display = "none";
+    table.style.display = "table";
+    table.querySelectorAll("tr:not(:first-child)").forEach((r) => r.remove());
+    plans.forEach((plan) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>#${plan.id}</td><td>${plan.price} XTR</td><td id="period-${plan.id}">…</td><td><button class="ghost" data-claim="${plan.id}">Claim</button></td><td><button class="ghost" data-advance="${plan.id}">Advance period</button></td>`;
+      table.appendChild(tr);
+    });
+    table.querySelectorAll("[data-advance]").forEach((btn) => btn.addEventListener("click", () => advancePeriod(Number(btn.dataset.advance))));
+    table.querySelectorAll("[data-claim]").forEach((btn) => btn.addEventListener("click", () => claimRevenue(Number(btn.dataset.claim))));
+    plans.forEach(loadPeriod);
+  }
+
+  async function loadPeriod(plan) {
+    try {
+      // create_plan's return + is_active don't expose current_period directly from the client
+      // side without an extra read method, so we surface it via the last advance/create event instead.
+      const cell = document.getElementById(`period-${plan.id}`);
+      if (cell) cell.textContent = plan.lastKnownPeriod ?? "0";
+    } catch {}
+  }
+
+  async function advancePeriod(planId) {
+    const result = await submitManifestAndWait(`fn main() {\n    let subs = var!["subs"];\n    subs.advance_period(${planId}u32);\n}`, { subs: SUBSCRIPTION });
+    const summary = eventsSummary(result);
+    const plans = loadPlans();
+    const plan = plans.find((p) => p.id === planId);
+    const match = summary.match(/"period":"(\d+)"/);
+    if (plan && match) { plan.lastKnownPeriod = match[1]; savePlans(plans); }
+    renderPlans();
+  }
+
+  async function claimRevenue(planId) {
+    const account = accountAddress;
+    const result = await submitManifestAndWait(
+      `fn main() {\n    let subs = var!["subs"];\n    let account = var!["account"];\n    let revenue = subs.claim_plan_revenue(${planId}u32);\n    account.deposit(revenue);\n}`,
+      { subs: SUBSCRIPTION, account }
+    );
+    alert(eventsSummary(result) || "Claimed (no events returned).");
+  }
+
+  document.getElementById("connectBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("connectBtn");
+    const statusEl = document.getElementById("connectStatus");
+    btn.disabled = true;
+    setStatus(statusEl, "Connecting…", "pending");
+    try {
+      daemonUrl = document.getElementById("daemonUrl").value.trim();
+      const auth = await rpc("auth.request", { permissions: ["Admin"], credentials: "None" });
+      authToken = auth.token;
+      let accounts = await rpc("accounts.list", { offset: 0, limit: 1 });
+      let entry;
+      if (accounts.accounts.length === 0) { entry = (await rpc("accounts.create", {})).account; }
+      else { entry = accounts.accounts[0]; }
+      const account = entry.account ?? entry;
+      accountAddress = account.component_address;
+      accountPublicKey = account.owner_public_key;
+      document.getElementById("accountPk").textContent = accountPublicKey;
+      document.getElementById("connectPanel").style.display = "none";
+      document.getElementById("appPanels").style.display = "block";
+      renderPlans();
+      refreshStats();
+    } catch (err) {
+      setStatus(statusEl, "Failed: " + err.message, "err");
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("refreshStatsBtn").addEventListener("click", refreshStats);
+
+  document.getElementById("registerBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("registerStatus");
+    const logEl = document.getElementById("registerLog");
+    const stake = document.getElementById("stakeAmount").value.trim();
+    setStatus(statusEl, "Staking & registering…", "pending");
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    let account = var!["account"];\n    let stake = account.withdraw(XTR, ${stake}u64);\n    let badge = registry.register(stake);\n    account.deposit(badge);\n}`,
+        { registry: REGISTRY, account: accountAddress }
+      );
+      const summary = eventsSummary(result);
+      showLog(logEl, summary);
+      setStatus(statusEl, summary.includes("MerchantRegistered") ? "Registered." : "Submitted — check log.", summary.includes("MerchantRegistered") ? "ok" : "pending");
+      refreshStats();
+    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+  });
+
+  document.getElementById("addStakeBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("registerStatus");
+    const logEl = document.getElementById("registerLog");
+    const stake = document.getElementById("stakeAmount").value.trim();
+    setStatus(statusEl, "Adding stake…", "pending");
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    let account = var!["account"];\n    let stake = account.withdraw(XTR, ${stake}u64);\n    registry.add_stake(stake);\n}`,
+        { registry: REGISTRY, account: accountAddress }
+      );
+      showLog(logEl, eventsSummary(result));
+      setStatus(statusEl, "Stake added.", "ok");
+      refreshStats();
+    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+  });
+
+  document.getElementById("createPlanBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("createPlanStatus");
+    const price = document.getElementById("planPrice").value.trim();
+    setStatus(statusEl, "Creating plan…", "pending");
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let subs = var!["subs"];\n    subs.create_plan(PublicKey("${accountPublicKey}"), ${price}u64, XTR);\n}`,
+        { subs: SUBSCRIPTION }
+      );
+      const planId = readScalar(result);
+      const plans = loadPlans();
+      plans.push({ id: planId, price, lastKnownPeriod: "0" });
+      savePlans(plans);
+      renderPlans();
+      setStatus(statusEl, `Plan #${planId} created — share this id with customers.`, "ok");
+    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+  });
+</script>

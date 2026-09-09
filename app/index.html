@@ -1,612 +1,175 @@
 <title>Ootle Private Pay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #faf9fc;
+    --bg: #f6f6f9;
     --surface: #ffffff;
-    --surface-sunken: #f2effa;
-    --border: #e1dced;
-    --text: #1c1726;
-    --text-dim: #6c6478;
-    --accent: #6d3fd6;
-    --accent-text: #ffffff;
-    --accent-dim: #efe8fc;
+    --surface-2: #edecf2;
+    --border: #dcdae3;
+    --text: #16141c;
+    --text-dim: #68657a;
+    --violet: #6d3fd6;
+    --violet-ink: #ffffff;
+    --bronze: #9c6a12;
+    --bronze-ink: #ffffff;
     --ok: #157a4d;
-    --ok-bg: #e4f5ec;
-    --err: #b91c34;
-    --err-bg: #fbe7ea;
-    --pending: #a3620a;
-    --pending-bg: #faf0dd;
     --focus: #6d3fd6;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #15111d;
-      --surface: #1d1828;
-      --surface-sunken: #171320;
-      --border: #34293f;
-      --text: #ece7f5;
-      --text-dim: #a89bbd;
-      --accent: #a480f2;
-      --accent-text: #17102b;
-      --accent-dim: #2a2140;
-      --ok: #4bd39a;
-      --ok-bg: #163127;
-      --err: #ff8a97;
-      --err-bg: #3a1720;
-      --pending: #f2b544;
-      --pending-bg: #372a11;
-      --focus: #a480f2;
+      --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
+      --text: #e9e6f0; --text-dim: #9b96a9;
+      --violet: #a480f2; --violet-ink: #17102b;
+      --bronze: #dba14a; --bronze-ink: #241a06;
+      --ok: #4bd39a; --focus: #a480f2;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #15111d;
-    --surface: #1d1828;
-    --surface-sunken: #171320;
-    --border: #34293f;
-    --text: #ece7f5;
-    --text-dim: #a89bbd;
-    --accent: #a480f2;
-    --accent-text: #17102b;
-    --accent-dim: #2a2140;
-    --ok: #4bd39a;
-    --ok-bg: #163127;
-    --err: #ff8a97;
-    --err-bg: #3a1720;
-    --pending: #f2b544;
-    --pending-bg: #372a11;
-    --focus: #a480f2;
+    --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
+    --text: #e9e6f0; --text-dim: #9b96a9;
+    --violet: #a480f2; --violet-ink: #17102b;
+    --bronze: #dba14a; --bronze-ink: #241a06;
+    --ok: #4bd39a; --focus: #a480f2;
     color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
-    line-height: 1.5;
-  }
-  .shell {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 40px 20px 64px;
-  }
+  body { background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif; }
 
-  header.page { margin-bottom: 28px; }
-  .eyebrow {
+  a { color: inherit; }
+
+  nav.top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px; border-bottom: 1px solid var(--border);
     font-family: "IBM Plex Mono", ui-monospace, monospace;
-    font-size: 0.72rem;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    gap: 8px;
   }
-  .eyebrow .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--ok);
-    box-shadow: 0 0 0 3px var(--ok-bg);
-  }
-  h1 {
+  .wordmark { font-size: 0.86rem; font-weight: 600; letter-spacing: 0.02em; display: flex; align-items: center; gap: 9px; }
+  .wordmark .bracket { color: var(--violet); }
+  nav.top .links { display: flex; gap: 22px; font-size: 0.8rem; }
+  nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; }
+  nav.top .links a.active { color: var(--text); border-color: var(--violet); }
+  nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); }
+  nav.top .net .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+
+  .shell { max-width: 920px; margin: 0 auto; padding: 56px 28px 72px; }
+
+  .pitch h1 {
     font-family: "IBM Plex Mono", ui-monospace, monospace;
-    font-weight: 600;
-    font-size: 1.7rem;
-    letter-spacing: -0.01em;
-    margin: 6px 0 4px;
-    text-wrap: balance;
+    font-size: clamp(1.6rem, 3vw, 2.15rem);
+    font-weight: 600; letter-spacing: -0.01em; margin: 0 0 14px; text-wrap: balance; max-width: 18ch;
   }
-  p.dek {
-    color: var(--text-dim);
-    margin: 0;
-    font-size: 0.95rem;
-    max-width: 58ch;
-  }
+  .pitch p { font-size: 1.02rem; color: var(--text-dim); max-width: 60ch; margin: 0; }
 
-  .callout {
-    margin-top: 18px;
-    padding: 12px 14px;
-    border-radius: 8px;
-    background: var(--surface-sunken);
-    border: 1px solid var(--border);
-    font-size: 0.82rem;
-    color: var(--text-dim);
+  .entries { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 40px 0 48px; }
+  @media (max-width: 640px) { .entries { grid-template-columns: 1fr; } }
+  .entry {
+    border: 1px solid var(--border); border-radius: 4px; padding: 26px 26px 24px;
+    background: var(--surface); display: flex; flex-direction: column; gap: 10px;
+    border-top: 3px solid var(--entry-accent);
   }
-  .callout b { color: var(--text); }
-  .callout code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.92em; }
+  .entry.merchant { --entry-accent: var(--bronze); }
+  .entry.pay { --entry-accent: var(--violet); }
+  .entry .tag {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.7rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--entry-accent);
+  }
+  .entry h2 { font-size: 1.15rem; margin: 2px 0 0; font-weight: 600; }
+  .entry p { font-size: 0.88rem; color: var(--text-dim); margin: 0; flex-grow: 1; }
+  .entry .go {
+    margin-top: 6px; align-self: flex-start; text-decoration: none; font-size: 0.85rem; font-weight: 600;
+    padding: 8px 16px; border-radius: 4px; background: var(--entry-accent); color: var(--surface);
+  }
+  .entry.merchant .go { color: var(--bronze-ink); }
+  .entry.pay .go { color: var(--violet-ink); }
 
-  .step {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 20px 22px;
-    margin-top: 18px;
-  }
-  .step-head {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
-  .step-num {
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-    font-size: 0.78rem;
-    color: var(--accent);
-    background: var(--accent-dim);
-    border-radius: 5px;
-    padding: 2px 7px;
-    flex-shrink: 0;
-  }
-  .step-title { font-weight: 600; font-size: 1rem; }
-  .step-note {
-    font-size: 0.83rem;
-    color: var(--text-dim);
-    margin: 4px 0 14px;
-  }
+  h3.section { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin: 0 0 14px; }
 
-  label {
-    display: block;
-    font-size: 0.78rem;
-    color: var(--text-dim);
-    margin-top: 12px;
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-    letter-spacing: 0.01em;
-  }
-  input {
-    width: 100%;
-    background: var(--surface-sunken);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    padding: 9px 11px;
-    margin-top: 5px;
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-    font-size: 0.88rem;
-  }
-  input:focus {
-    outline: 2px solid var(--focus);
-    outline-offset: 1px;
-  }
-  input::placeholder { color: var(--text-dim); opacity: 0.7; }
+  table.arch { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  table.arch th { text-align: left; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-dim); padding: 0 12px 10px 0; border-bottom: 1px solid var(--border); font-weight: 500; }
+  table.arch td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.arch td:first-child { font-weight: 600; white-space: nowrap; }
+  table.arch code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.85em; background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
+  table.arch tr:last-child td { border-bottom: none; }
 
-  .row { display: flex; gap: 12px; }
-  .row > * { flex: 1; }
-
-  button {
-    margin-top: 16px;
-    padding: 10px 18px;
-    border-radius: 7px;
-    border: none;
-    background: var(--accent);
-    color: var(--accent-text);
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    font-family: "IBM Plex Sans", sans-serif;
+  footer.site {
+    margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    font-size: 0.78rem; color: var(--text-dim); font-family: "IBM Plex Mono", ui-monospace, monospace;
   }
-  button:disabled { opacity: 0.5; cursor: default; }
-  button:hover:not(:disabled) { filter: brightness(1.08); }
-  button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-  button.secondary {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  .status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-    margin-top: 12px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: var(--surface-sunken);
-    color: var(--text-dim);
-  }
-  .status:empty { display: none; }
-  .status.ok { background: var(--ok-bg); color: var(--ok); }
-  .status.err { background: var(--err-bg); color: var(--err); }
-  .status.pending { background: var(--pending-bg); color: var(--pending); }
-
-  .log {
-    background: var(--surface-sunken);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 11px 13px;
-    margin-top: 10px;
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-    font-size: 0.78rem;
-    white-space: pre-wrap;
-    word-break: break-all;
-    max-height: 200px;
-    overflow-y: auto;
-    color: var(--text-dim);
-  }
-
-  .kv { margin-top: 10px; font-size: 0.85rem; }
-  .kv dt { color: var(--text-dim); font-size: 0.76rem; font-family: "IBM Plex Mono", ui-monospace, monospace; margin-top: 8px; }
-  .kv dd {
-    margin: 2px 0 0;
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-    font-size: 0.82rem;
-    word-break: break-all;
-  }
-
-  #appPanels { display: none; }
-
-  footer.addrs {
-    margin-top: 28px;
-    padding-top: 18px;
-    border-top: 1px solid var(--border);
-    font-size: 0.76rem;
-    color: var(--text-dim);
-  }
-  footer.addrs .eyebrow { margin-bottom: 8px; }
-  footer.addrs dt { font-family: "IBM Plex Mono", ui-monospace, monospace; margin-top: 8px; }
-  footer.addrs dd { margin: 2px 0 0; font-family: "IBM Plex Mono", ui-monospace, monospace; word-break: break-all; color: var(--text); }
+  footer.site a { text-decoration: underline; text-underline-offset: 2px; }
+  footer.site dl { margin: 0; }
+  footer.site dt { display: inline; }
+  footer.site dd { display: inline; margin: 0 18px 0 6px; word-break: break-all; }
 </style>
 
+<nav class="top">
+  <div class="wordmark"><span class="bracket">[</span>OOTLE PRIVATE PAY<span class="bracket">]</span></div>
+  <div class="links">
+    <a href="https://matteozero.github.io/ootle-private-pay/index.html" class="active">Overview</a>
+    <a href="https://matteozero.github.io/ootle-private-pay/merchant.html">Merchant Console</a>
+    <a href="https://matteozero.github.io/ootle-private-pay/pay.html">Pay</a>
+  </div>
+  <div class="net"><span class="dot"></span> esme testnet</div>
+</nav>
+
 <div class="shell">
-  <header class="page">
-    <div class="eyebrow"><span class="dot"></span> Live on Tari Ootle · esme testnet</div>
-    <h1>🔒 Ootle Private Pay</h1>
-    <p class="dek">A decentralized, stake-gated payment gateway. Merchants register with a public,
-      slashable stake; customers pay and subscribe without ever linking their identity to what
-      they bought.</p>
-  </header>
-
-  <div class="callout">
-    This page talks directly to <b>your own</b> Tari wallet daemon over JSON-RPC — nothing routes
-    through a server we control. Run <code>tari_ootle_walletd --network esme</code> locally (see
-    the <a href="https://github.com/matteozero/ootle-private-pay" style="color:inherit">repo</a>
-    for setup), then connect below.
+  <div class="pitch">
+    <h1>Payments infrastructure without the paper trail.</h1>
+    <p>A decentralized third-party payment gateway on Tari Ootle. Merchants stake a public,
+      slashable bond to get API access. Customers pay them — one-off or on subscription —
+      without ever putting their amount or identity on the record.</p>
   </div>
 
-  <div id="connectPanel">
-    <div class="step">
-      <div class="step-head">
-        <span class="step-num">01</span>
-        <span class="step-title">Connect your wallet daemon</span>
-      </div>
-      <p class="step-note">Defaults to a local daemon on the standard port.</p>
-      <label for="daemonUrl">Wallet daemon JSON-RPC URL</label>
-      <input id="daemonUrl" value="http://127.0.0.1:5100/json_rpc" />
-      <button id="connectBtn">Connect</button>
-      <div id="connectStatus" class="status"></div>
+  <div class="entries">
+    <div class="entry merchant">
+      <span class="tag">For businesses</span>
+      <h2>Merchant Console</h2>
+      <p>Stake to register, manage your tier, publish subscription plans, and claim
+        revenue from your customers.</p>
+      <a class="go" href="https://matteozero.github.io/ootle-private-pay/merchant.html">Open console →</a>
+    </div>
+    <div class="entry pay">
+      <span class="tag">For customers</span>
+      <h2>Pay</h2>
+      <p>Send a merchant an anonymous one-off payment, or subscribe to a plan without
+        linking your wallet to what you bought.</p>
+      <a class="go" href="https://matteozero.github.io/ootle-private-pay/pay.html">Open pay →</a>
     </div>
   </div>
 
-  <div id="appPanels">
-    <div class="step">
-      <div class="step-head"><span class="step-title">Your wallet</span></div>
-      <dl class="kv">
-        <dt>Account</dt><dd id="accountAddr"></dd>
-        <dt>Public key</dt><dd id="accountPk"></dd>
-      </dl>
-    </div>
+  <h3 class="section">How the privacy split works</h3>
+  <table class="arch">
+    <tr><th>Layer</th><th>Contract</th><th>Identity</th><th>Why</th></tr>
+    <tr>
+      <td>Merchant accountability</td>
+      <td><code>merchant_registry</code></td>
+      <td>Public</td>
+      <td>Merchants want a public reputation; stake + slash needs an identifiable address.</td>
+    </tr>
+    <tr>
+      <td>One-off payments</td>
+      <td><code>private_pay</code></td>
+      <td>Fee only</td>
+      <td>The platform never sees the payment itself — only a small per-tier fee.</td>
+    </tr>
+    <tr>
+      <td>Subscriptions</td>
+      <td><code>subscription</code></td>
+      <td>Decoupled</td>
+      <td>Price is already public; only the subscriber's link to it is worth hiding.</td>
+    </tr>
+  </table>
 
-    <div class="step">
-      <div class="step-head">
-        <span class="step-num">02</span>
-        <span class="step-title">Become a merchant</span>
-      </div>
-      <p class="step-note">Stake XTR to register — public and slashable, so customers can trust the gateway.</p>
-      <label for="stakeAmount">Stake amount (XTR)</label>
-      <input id="stakeAmount" value="1000" />
-      <button id="registerBtn">Stake &amp; register</button>
-      <div id="registerStatus" class="status"></div>
-      <div id="registerLog" class="log" style="display:none"></div>
-    </div>
-
-    <div class="step">
-      <div class="step-head">
-        <span class="step-num">03</span>
-        <span class="step-title">Pay a merchant anonymously</span>
-      </div>
-      <p class="step-note">Amount and recipient stay hidden — only the platform fee (priced by the merchant's tier) is ever recorded on-chain.</p>
-      <label for="payMerchant">Merchant public key (hex)</label>
-      <input id="payMerchant" placeholder="paste a registered merchant's public key" />
-      <label for="payFee">Platform fee (XTR, min 3 for Basic tier)</label>
-      <input id="payFee" value="3" />
-      <button id="payBtn">Send payment</button>
-      <div id="payStatus" class="status"></div>
-      <div id="payLog" class="log" style="display:none"></div>
-    </div>
-
-    <div class="step">
-      <div class="step-head">
-        <span class="step-num">04</span>
-        <span class="step-title">Subscriptions</span>
-      </div>
-      <p class="step-note">Plan price is public; your subscriber secret is not — never keyed to your wallet's public key.</p>
-      <div class="row">
-        <div>
-          <label for="subMerchant">Merchant public key (hex)</label>
-          <input id="subMerchant" placeholder="paste a registered merchant's public key" />
-        </div>
-        <div>
-          <label for="subPrice">Plan price (XTR)</label>
-          <input id="subPrice" value="50" />
-        </div>
-      </div>
-      <label for="subPlanId">Plan id</label>
-      <input id="subPlanId" value="0" />
-      <button id="createPlanBtn">Create plan</button>
-      <div id="createPlanStatus" class="status"></div>
-
-      <label for="subSecret">Your subscriber secret (keep this private!)</label>
-      <input id="subSecret" placeholder="a random string only you know" />
-      <button id="subscribeBtn">Subscribe</button>
-      <button id="checkActiveBtn" class="secondary">Check is_active</button>
-      <div id="subscribeStatus" class="status"></div>
-      <div id="activeStatus" class="status"></div>
-      <div id="subLog" class="log" style="display:none"></div>
-    </div>
-  </div>
-
-  <footer class="addrs">
-    <div class="eyebrow">Deployed components — esme testnet</div>
+  <footer class="site">
+    <span><a href="https://github.com/matteozero/ootle-private-pay">Source on GitHub</a></span>
     <dl>
-      <dt>merchant_registry</dt><dd>component_1d32aca29e61e70736d16f3e2603dffb6eb7859cfda60ab09977da73711aa7ed</dd>
-      <dt>private_pay</dt><dd>component_478fd847553b9e896324b641fa3f60200d2f37ae04699c3628f09062f2fdc623</dd>
-      <dt>subscription</dt><dd>component_9addab1f01ebf52a7bc95db6fe2b54a00878ce305c6d2c62761eac4f70c6c475</dd>
+      <dt>registry</dt><dd>component_1d32aca2…1aa7ed</dd>
+      <dt>pay</dt><dd>component_478fd847…2fdc623</dd>
+      <dt>subs</dt><dd>component_9addab1f…70c6c475</dd>
     </dl>
   </footer>
 </div>
-
-<script>
-  // ── Deployed component addresses on the esme testnet ─────────────────────
-  const REGISTRY = "component_1d32aca29e61e70736d16f3e2603dffb6eb7859cfda60ab09977da73711aa7ed";
-  const PRIVATE_PAY = "component_478fd847553b9e896324b641fa3f60200d2f37ae04699c3628f09062f2fdc623";
-  const SUBSCRIPTION = "component_9addab1f01ebf52a7bc95db6fe2b54a00878ce305c6d2c62761eac4f70c6c475";
-
-  let daemonUrl = "";
-  let authToken = "";
-  let accountAddress = "";
-  let accountPublicKey = "";
-  let rpcId = 1;
-
-  async function rpc(method, params) {
-    const res = await fetch(daemonUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(authToken ? { Authorization: "Bearer " + authToken } : {}),
-      },
-      body: JSON.stringify({ jsonrpc: "2.0", id: rpcId++, method, params }),
-    });
-    const body = await res.json();
-    if (body.error) throw new Error(body.error.message || JSON.stringify(body.error));
-    return body.result;
-  }
-
-  async function submitManifestAndWait(manifest, variables, log) {
-    const submitted = await rpc("transactions.submit_manifest", {
-      manifest,
-      variables,
-      seal_signer_key_id: null,
-      signing_key_ids: [],
-      max_fee: 100000,
-      dry_run: false,
-      blobs: {},
-    });
-    if (log) log(`submitted tx ${submitted.transaction_id}, waiting for result…`);
-    const result = await rpc("transactions.wait_result", {
-      transaction_id: submitted.transaction_id,
-      timeout_secs: 60,
-    });
-    return result;
-  }
-
-  function eventsSummary(result) {
-    const finalize = result && result.result;
-    if (!finalize) return "(no result yet — status: " + (result ? result.status : "?") + ")";
-    return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
-  }
-
-  function setStatus(el, text, kind) {
-    el.textContent = text;
-    el.className = "status" + (kind ? " " + kind : "");
-  }
-
-  function showLog(el, text) {
-    el.style.display = "block";
-    el.textContent = text;
-  }
-
-  // ── Connect ────────────────────────────────────────────────────────────────
-  document.getElementById("connectBtn").addEventListener("click", async () => {
-    const btn = document.getElementById("connectBtn");
-    const statusEl = document.getElementById("connectStatus");
-    btn.disabled = true;
-    setStatus(statusEl, "Connecting…", "pending");
-    try {
-      daemonUrl = document.getElementById("daemonUrl").value.trim();
-
-      // Mint a session token. This demo requests broad permissions for
-      // simplicity — a production app would request only the specific
-      // Accounts/Transactions/Templates grants it needs.
-      const auth = await rpc("auth.request", {
-        permissions: ["Admin"],
-        credentials: "None",
-      });
-      authToken = auth.token;
-
-      let accounts = await rpc("accounts.list", { offset: 0, limit: 1 });
-      let entry;
-      if (accounts.accounts.length === 0) {
-        const created = await rpc("accounts.create", {});
-        entry = created.account;
-      } else {
-        entry = accounts.accounts[0];
-      }
-      // The daemon nests the actual account fields one level deeper, under `.account`
-      // (list/create responses both look like `{ account: { component_address, ... }, address }`).
-      const account = entry.account ?? entry;
-      accountAddress = account.component_address;
-      accountPublicKey = account.owner_public_key;
-
-      document.getElementById("accountAddr").textContent = accountAddress;
-      document.getElementById("accountPk").textContent = accountPublicKey;
-      document.getElementById("payMerchant").value = accountPublicKey;
-      document.getElementById("subMerchant").value = accountPublicKey;
-
-      document.getElementById("connectPanel").style.display = "none";
-      document.getElementById("appPanels").style.display = "block";
-    } catch (err) {
-      setStatus(statusEl, "Failed: " + err.message, "err");
-      btn.disabled = false;
-    }
-  });
-
-  // ── Register merchant ────────────────────────────────────────────────────
-  document.getElementById("registerBtn").addEventListener("click", async () => {
-    const btn = document.getElementById("registerBtn");
-    const statusEl = document.getElementById("registerStatus");
-    const logEl = document.getElementById("registerLog");
-    const stake = document.getElementById("stakeAmount").value.trim();
-    btn.disabled = true;
-    setStatus(statusEl, "Staking & registering…", "pending");
-    try {
-      const manifest = `
-fn main() {
-    let registry = var!["registry"];
-    let account = var!["account"];
-    let stake = account.withdraw(XTR, ${stake}u64);
-    let badge = registry.register(stake);
-    account.deposit(badge);
-}`;
-      const result = await submitManifestAndWait(manifest, { registry: REGISTRY, account: accountAddress });
-      const summary = eventsSummary(result);
-      showLog(logEl, summary);
-      if (summary.includes("MerchantRegistered")) {
-        setStatus(statusEl, "Registered! You are now a merchant.", "ok");
-      } else if (result.status === "Rejected" || summary.toLowerCase().includes("reject")) {
-        setStatus(statusEl, "Rejected — see log below.", "err");
-      } else {
-        setStatus(statusEl, "Submitted — status: " + result.status, "pending");
-      }
-    } catch (err) {
-      setStatus(statusEl, "Failed: " + err.message, "err");
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  // ── Pay ───────────────────────────────────────────────────────────────────
-  document.getElementById("payBtn").addEventListener("click", async () => {
-    const btn = document.getElementById("payBtn");
-    const statusEl = document.getElementById("payStatus");
-    const logEl = document.getElementById("payLog");
-    const merchant = document.getElementById("payMerchant").value.trim();
-    const fee = document.getElementById("payFee").value.trim();
-    btn.disabled = true;
-    setStatus(statusEl, "Sending anonymous payment…", "pending");
-    try {
-      const manifest = `
-fn main() {
-    let pay = var!["pay"];
-    let account = var!["account"];
-    let fee = account.withdraw(XTR, ${fee}u64);
-    pay.pay(fee, PublicKey("${merchant}"));
-}`;
-      const result = await submitManifestAndWait(manifest, { pay: PRIVATE_PAY, account: accountAddress });
-      const summary = eventsSummary(result);
-      showLog(logEl, summary);
-      if (summary.includes("PaymentProcessed")) {
-        setStatus(statusEl, "Payment sent — only the fee is ever recorded.", "ok");
-      } else {
-        setStatus(statusEl, "Rejected — see log below.", "err");
-      }
-    } catch (err) {
-      setStatus(statusEl, "Failed: " + err.message, "err");
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  // ── Subscriptions ─────────────────────────────────────────────────────────
-  document.getElementById("createPlanBtn").addEventListener("click", async () => {
-    const btn = document.getElementById("createPlanBtn");
-    const statusEl = document.getElementById("createPlanStatus");
-    const logEl = document.getElementById("subLog");
-    const merchant = document.getElementById("subMerchant").value.trim();
-    const price = document.getElementById("subPrice").value.trim();
-    btn.disabled = true;
-    setStatus(statusEl, "Creating plan…", "pending");
-    try {
-      const manifest = `
-fn main() {
-    let subs = var!["subs"];
-    subs.create_plan(PublicKey("${merchant}"), ${price}u64, XTR);
-}`;
-      const result = await submitManifestAndWait(manifest, { subs: SUBSCRIPTION });
-      showLog(logEl, eventsSummary(result));
-      setStatus(statusEl, "Plan created (see plan id in log; defaults to 0 for the first plan).", "ok");
-    } catch (err) {
-      setStatus(statusEl, "Failed: " + err.message, "err");
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  document.getElementById("subscribeBtn").addEventListener("click", async () => {
-    const btn = document.getElementById("subscribeBtn");
-    const statusEl = document.getElementById("subscribeStatus");
-    const logEl = document.getElementById("subLog");
-    const planId = document.getElementById("subPlanId").value.trim();
-    const price = document.getElementById("subPrice").value.trim();
-    const secret = document.getElementById("subSecret").value.trim();
-    if (!secret) {
-      setStatus(statusEl, "Pick a secret first — it replaces your identity for this subscription.", "err");
-      return;
-    }
-    btn.disabled = true;
-    setStatus(statusEl, "Subscribing…", "pending");
-    try {
-      const manifest = `
-fn main() {
-    let subs = var!["subs"];
-    let account = var!["account"];
-    let payment = account.withdraw(XTR, ${price}u64);
-    let badge = subs.subscribe(${planId}u32, "${secret}", payment);
-    account.deposit(badge);
-}`;
-      const result = await submitManifestAndWait(manifest, { subs: SUBSCRIPTION, account: accountAddress });
-      showLog(logEl, eventsSummary(result));
-      setStatus(statusEl, "Subscribed! Membership badge deposited into your account.", "ok");
-    } catch (err) {
-      setStatus(statusEl, "Failed (already subscribed with this secret, or use 'renew' instead): " + err.message, "err");
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  document.getElementById("checkActiveBtn").addEventListener("click", async () => {
-    const statusEl = document.getElementById("activeStatus");
-    const planId = document.getElementById("subPlanId").value.trim();
-    const secret = document.getElementById("subSecret").value.trim();
-    setStatus(statusEl, "Checking…", "pending");
-    try {
-      const manifest = `
-fn main() {
-    let subs = var!["subs"];
-    subs.is_active(${planId}u32, "${secret}");
-}`;
-      const result = await submitManifestAndWait(manifest, { subs: SUBSCRIPTION });
-      const finalize = result.result;
-      const isActive = finalize && finalize.execution_results && finalize.execution_results.length > 0
-        ? JSON.stringify(finalize.execution_results[finalize.execution_results.length - 1].indexed.value)
-        : "unknown";
-      setStatus(statusEl, "is_active raw result: " + isActive, "ok");
-    } catch (err) {
-      setStatus(statusEl, "Failed: " + err.message, "err");
-    }
-  });
-</script>

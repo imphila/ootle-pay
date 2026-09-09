@@ -1,0 +1,303 @@
+<title>Pay — Ootle Private Pay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f6f9; --surface: #ffffff; --surface-2: #edecf2; --border: #dcdae3;
+    --text: #16141c; --text-dim: #68657a;
+    --accent: #6d3fd6; --accent-ink: #ffffff; --accent-dim: #efe8fc;
+    --ok: #157a4d; --ok-bg: #e4f5ec;
+    --err: #b91c34; --err-bg: #fbe7ea;
+    --pending: #a3620a; --pending-bg: #faf0dd;
+    --focus: #6d3fd6;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
+      --text: #e9e6f0; --text-dim: #9b96a9;
+      --accent: #a480f2; --accent-ink: #17102b; --accent-dim: #241c38;
+      --ok: #4bd39a; --ok-bg: #16281f;
+      --err: #ff8a97; --err-bg: #34151b;
+      --pending: #f2b544; --pending-bg: #33270f;
+      --focus: #a480f2;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
+    --text: #e9e6f0; --text-dim: #9b96a9;
+    --accent: #a480f2; --accent-ink: #17102b; --accent-dim: #241c38;
+    --ok: #4bd39a; --ok-bg: #16281f;
+    --err: #ff8a97; --err-bg: #34151b;
+    --pending: #f2b544; --pending-bg: #33270f;
+    --focus: #a480f2;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif; line-height: 1.5; }
+  a { color: inherit; }
+
+  nav.top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  .wordmark { font-size: 0.86rem; font-weight: 600; display: flex; align-items: center; gap: 9px; }
+  .wordmark .bracket { color: var(--accent); }
+  nav.top .links { display: flex; gap: 22px; font-size: 0.8rem; }
+  nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; }
+  nav.top .links a.active { color: var(--text); border-color: var(--accent); }
+  nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); }
+  nav.top .net .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+
+  .shell { max-width: 480px; margin: 0 auto; padding: 40px 24px 72px; }
+
+  h1.page { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.25rem; font-weight: 600; margin: 0 0 20px; text-align: center; }
+
+  .callout {
+    padding: 12px 14px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border);
+    font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px;
+  }
+  .callout b { color: var(--text); }
+
+  .switch { display: flex; border: 1px solid var(--border); border-radius: 7px; padding: 3px; margin-bottom: 20px; }
+  .switch button {
+    flex: 1; background: transparent; border: none; padding: 8px; border-radius: 5px;
+    font-family: "IBM Plex Sans", sans-serif; font-weight: 600; font-size: 0.86rem; color: var(--text-dim); cursor: pointer;
+  }
+  .switch button.active { background: var(--accent); color: var(--accent-ink); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+
+  label { display: block; font-size: 0.76rem; color: var(--text-dim); margin-top: 12px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  input {
+    width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 11px; margin-top: 5px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.88rem;
+  }
+  input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .row { display: flex; gap: 10px; } .row > * { flex: 1; }
+  .row.tight { align-items: flex-end; }
+  .row.tight button { margin-top: 5px; white-space: nowrap; }
+
+  button.primary {
+    width: 100%; margin-top: 18px; padding: 12px 18px; border-radius: 7px; border: none;
+    background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 0.92rem; cursor: pointer;
+    font-family: "IBM Plex Sans", sans-serif;
+  }
+  button.primary:disabled { opacity: 0.5; cursor: default; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+  button.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); padding: 9px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-family: "IBM Plex Sans", sans-serif; }
+
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-family: "IBM Plex Mono", ui-monospace, monospace; margin-top: 14px; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); color: var(--text-dim); }
+  .status:empty { display: none; }
+  .status.ok { background: var(--ok-bg); color: var(--ok); }
+  .status.err { background: var(--err-bg); color: var(--err); }
+  .status.pending { background: var(--pending-bg); color: var(--pending); }
+
+  .log { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; margin-top: 12px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.76rem; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto; color: var(--text-dim); }
+
+  #payView, #subView { display: none; }
+  #appPanels { display: none; }
+</style>
+
+<nav class="top">
+  <div class="wordmark"><span class="bracket">[</span>OOTLE PRIVATE PAY<span class="bracket">]</span></div>
+  <div class="links">
+    <a href="https://matteozero.github.io/ootle-private-pay/index.html">Overview</a>
+    <a href="https://matteozero.github.io/ootle-private-pay/merchant.html">Merchant Console</a>
+    <a href="https://matteozero.github.io/ootle-private-pay/pay.html" class="active">Pay</a>
+  </div>
+  <div class="net"><span class="dot"></span> esme testnet</div>
+</nav>
+
+<div class="shell">
+  <h1 class="page">Pay privately</h1>
+
+  <div id="connectPanel" class="card">
+    <label for="daemonUrl">Wallet daemon JSON-RPC URL</label>
+    <input id="daemonUrl" value="http://127.0.0.1:5100/json_rpc" />
+    <button id="connectBtn" class="primary">Connect wallet</button>
+    <div id="connectStatus" class="status"></div>
+  </div>
+
+  <div id="appPanels">
+    <div class="switch">
+      <button id="tabPay" class="active">One-time payment</button>
+      <button id="tabSub">Subscribe</button>
+    </div>
+
+    <div id="payView" class="card">
+      <div class="callout">Amount and recipient stay hidden — only a small per-tier platform fee is ever recorded on-chain.</div>
+      <label for="payMerchant">Merchant public key</label>
+      <input id="payMerchant" placeholder="paste or follow a merchant's payment link" />
+      <label for="payFee">Platform fee (XTR)</label>
+      <input id="payFee" value="3" />
+      <button id="payBtn" class="primary">Send payment</button>
+      <div id="payStatus" class="status"></div>
+      <div id="payLog" class="log" style="display:none"></div>
+    </div>
+
+    <div id="subView" class="card">
+      <div class="callout">The plan's price is public, but this contract never reads your wallet's public key — your <b>subscriber secret</b> is your only identity here. Keep it, don't reuse it elsewhere.</div>
+      <label for="subMerchant">Merchant public key</label>
+      <input id="subMerchant" placeholder="paste or follow a merchant's payment link" />
+      <div class="row">
+        <div><label for="subPlanId">Plan id</label><input id="subPlanId" value="0" /></div>
+        <div><label for="subPrice">Price (XTR)</label><input id="subPrice" value="50" /></div>
+      </div>
+      <label for="subSecret">Your subscriber secret</label>
+      <div class="row tight">
+        <input id="subSecret" placeholder="a random string only you know" />
+        <button id="genSecretBtn" class="secondary">Generate</button>
+      </div>
+      <div class="row">
+        <button id="subscribeBtn" class="primary">Subscribe</button>
+        <button id="renewBtn" class="primary">Renew</button>
+      </div>
+      <button id="checkActiveBtn" class="secondary" style="margin-top:10px; width:100%;">Check subscription status</button>
+      <div id="subscribeStatus" class="status"></div>
+      <div id="activeStatus" class="status"></div>
+      <div id="subLog" class="log" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const REGISTRY = "component_1d32aca29e61e70736d16f3e2603dffb6eb7859cfda60ab09977da73711aa7ed";
+  const PRIVATE_PAY = "component_478fd847553b9e896324b641fa3f60200d2f37ae04699c3628f09062f2fdc623";
+  const SUBSCRIPTION = "component_9addab1f01ebf52a7bc95db6fe2b54a00878ce305c6d2c62761eac4f70c6c475";
+
+  let daemonUrl = "", authToken = "", accountAddress = "", accountPublicKey = "", rpcId = 1;
+
+  async function rpc(method, params) {
+    const res = await fetch(daemonUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(authToken ? { Authorization: "Bearer " + authToken } : {}) },
+      body: JSON.stringify({ jsonrpc: "2.0", id: rpcId++, method, params }),
+    });
+    const body = await res.json();
+    if (body.error) throw new Error(body.error.message || JSON.stringify(body.error));
+    return body.result;
+  }
+  async function submitManifestAndWait(manifest, variables) {
+    const submitted = await rpc("transactions.submit_manifest", {
+      manifest, variables, seal_signer_key_id: null, signing_key_ids: [], max_fee: 100000, dry_run: false, blobs: {},
+    });
+    return rpc("transactions.wait_result", { transaction_id: submitted.transaction_id, timeout_secs: 60 });
+  }
+  function readScalar(result) {
+    const finalize = result && result.result;
+    if (!finalize || !finalize.execution_results.length) return null;
+    return finalize.execution_results[finalize.execution_results.length - 1].indexed.value;
+  }
+  function eventsSummary(result) {
+    const finalize = result && result.result;
+    if (!finalize) return "(no result yet — status: " + (result ? result.status : "?") + ")";
+    return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
+  }
+  function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
+  function showLog(el, text) { el.style.display = "block"; el.textContent = text; }
+
+  // Prefill from a merchant-shared link, e.g. pay.html?merchant=<pk>&plan=0&price=50&mode=subscribe
+  const params = new URLSearchParams(location.search);
+  if (params.get("merchant")) {
+    document.getElementById("payMerchant").value = params.get("merchant");
+    document.getElementById("subMerchant").value = params.get("merchant");
+  }
+  if (params.get("plan")) document.getElementById("subPlanId").value = params.get("plan");
+  if (params.get("price")) {
+    document.getElementById("subPrice").value = params.get("price");
+    document.getElementById("payFee").value = params.get("price");
+  }
+
+  function showTab(tab) {
+    document.getElementById("tabPay").classList.toggle("active", tab === "pay");
+    document.getElementById("tabSub").classList.toggle("active", tab === "sub");
+    document.getElementById("payView").style.display = tab === "pay" ? "block" : "none";
+    document.getElementById("subView").style.display = tab === "sub" ? "block" : "none";
+  }
+  document.getElementById("tabPay").addEventListener("click", () => showTab("pay"));
+  document.getElementById("tabSub").addEventListener("click", () => showTab("sub"));
+  showTab(params.get("mode") === "subscribe" ? "sub" : "pay");
+
+  document.getElementById("genSecretBtn").addEventListener("click", () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    document.getElementById("subSecret").value = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  });
+
+  document.getElementById("connectBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("connectBtn");
+    const statusEl = document.getElementById("connectStatus");
+    btn.disabled = true;
+    setStatus(statusEl, "Connecting…", "pending");
+    try {
+      daemonUrl = document.getElementById("daemonUrl").value.trim();
+      const auth = await rpc("auth.request", { permissions: ["Admin"], credentials: "None" });
+      authToken = auth.token;
+      let accounts = await rpc("accounts.list", { offset: 0, limit: 1 });
+      let entry;
+      if (accounts.accounts.length === 0) { entry = (await rpc("accounts.create", {})).account; }
+      else { entry = accounts.accounts[0]; }
+      const account = entry.account ?? entry;
+      accountAddress = account.component_address;
+      accountPublicKey = account.owner_public_key;
+      document.getElementById("connectPanel").style.display = "none";
+      document.getElementById("appPanels").style.display = "block";
+    } catch (err) {
+      setStatus(statusEl, "Failed: " + err.message, "err");
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("payBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("payStatus");
+    const logEl = document.getElementById("payLog");
+    const merchant = document.getElementById("payMerchant").value.trim();
+    const fee = document.getElementById("payFee").value.trim();
+    setStatus(statusEl, "Sending anonymous payment…", "pending");
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let pay = var!["pay"];\n    let account = var!["account"];\n    let fee = account.withdraw(XTR, ${fee}u64);\n    pay.pay(fee, PublicKey("${merchant}"));\n}`,
+        { pay: PRIVATE_PAY, account: accountAddress }
+      );
+      const summary = eventsSummary(result);
+      showLog(logEl, summary);
+      setStatus(statusEl, summary.includes("PaymentProcessed") ? "Sent — only the fee is on the record." : "Rejected — see log.", summary.includes("PaymentProcessed") ? "ok" : "err");
+    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+  });
+
+  async function doSubscribe(method) {
+    const statusEl = document.getElementById("subscribeStatus");
+    const logEl = document.getElementById("subLog");
+    const planId = document.getElementById("subPlanId").value.trim();
+    const price = document.getElementById("subPrice").value.trim();
+    const secret = document.getElementById("subSecret").value.trim();
+    if (!secret) { setStatus(statusEl, "Generate or enter a secret first.", "err"); return; }
+    setStatus(statusEl, method === "subscribe" ? "Subscribing…" : "Renewing…", "pending");
+    try {
+      const badgeLine = method === "subscribe" ? `let badge = subs.subscribe(${planId}u32, "${secret}", payment);\n    account.deposit(badge);` : `subs.renew(${planId}u32, "${secret}", payment);`;
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let subs = var!["subs"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${price}u64);\n    ${badgeLine}\n}`,
+        { subs: SUBSCRIPTION, account: accountAddress }
+      );
+      showLog(logEl, eventsSummary(result));
+      setStatus(statusEl, "Done.", "ok");
+    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+  }
+  document.getElementById("subscribeBtn").addEventListener("click", () => doSubscribe("subscribe"));
+  document.getElementById("renewBtn").addEventListener("click", () => doSubscribe("renew"));
+
+  document.getElementById("checkActiveBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("activeStatus");
+    const planId = document.getElementById("subPlanId").value.trim();
+    const secret = document.getElementById("subSecret").value.trim();
+    setStatus(statusEl, "Checking…", "pending");
+    try {
+      const result = await submitManifestAndWait(`fn main() {\n    let subs = var!["subs"];\n    subs.is_active(${planId}u32, "${secret}");\n}`, { subs: SUBSCRIPTION });
+      const active = readScalar(result);
+      setStatus(statusEl, active ? "Active." : "Not active.", active ? "ok" : "err");
+    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+  });
+</script>
