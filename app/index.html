@@ -439,13 +439,16 @@
       authToken = auth.token;
 
       let accounts = await rpc("accounts.list", { offset: 0, limit: 1 });
-      let account;
+      let entry;
       if (accounts.accounts.length === 0) {
         const created = await rpc("accounts.create", {});
-        account = created.account;
+        entry = created.account;
       } else {
-        account = accounts.accounts[0];
+        entry = accounts.accounts[0];
       }
+      // The daemon nests the actual account fields one level deeper, under `.account`
+      // (list/create responses both look like `{ account: { component_address, ... }, address }`).
+      const account = entry.account ?? entry;
       accountAddress = account.component_address;
       accountPublicKey = account.owner_public_key;
 
