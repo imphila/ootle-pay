@@ -24,8 +24,32 @@ compromise both, this splits them cleanly across three components:
 | Layer | Contract | Identity | Why |
 |---|---|---|---|
 | Merchant accountability | `merchant_registry` | **Public** | Merchants want a public reputation; stake + slash requires an identifiable address. |
-| One-off payments | `private_pay` | **Fee only** (platform never sees the payment itself) | Customers should never be doxxed by paying for something. |
+| One-off payments | `private_pay` | **Buyer hidden, amount public** | Merchants need real order/revenue tracking; only the specific buyer's identity is worth hiding. |
 | Subscriptions | `subscription` | **Decoupled** (price public, subscriber not) | Price transparency costs nothing (it's already published); subscriber linkage is the only thing worth hiding. |
+
+## What "hidden" actually means here
+
+It's worth being precise about this, because it's easy to conflate two different layers:
+
+- **Tari Layer 1** (the base chain, Mimblewimble-based) natively hides **amounts** for its own
+  transfers via Pedersen commitments. That's a real, automatic, protocol-level property — we don't
+  do anything to earn it.
+- **Ootle (Layer 2)**, where these contracts run, is a smart-contract execution layer. Calling a
+  contract method is a signed transaction: `subscribe(plan_id, secret, payment)` is submitted with
+  a valid signature from some key, and that signature — and the public key behind it — sits on the
+  L2 ledger like any other transaction field. L1's amount-hiding doesn't extend to "who signed this
+  contract call"; validators need the signer's key to verify the signature in the first place.
+
+So the identity-hiding in `subscription` (and in the redesigned `private_pay`, see below) is a
+**contract-level engineering choice, not a cryptographic guarantee**: these contracts simply never
+call `CallerContext::transaction_signer_public_key()` and never emit or store it anywhere, so
+nothing in their *own* state or events links one call to another. That only holds up in practice if
+the caller also signs each sensitive call with a fresh, throwaway account — a wallet-side habit we
+rely on and document, not something these contracts can enforce. A sufficiently motivated observer
+correlating raw transaction signatures across the L2 ledger is a different, harder problem than
+these contracts solve. What one-off purchases *do* hide by design is exactly what the user asked
+for: the specific buyer's identity — not the amount, which is visible on purpose (see
+`contracts/private_pay` below).
 
 ## Architecture
 

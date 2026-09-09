@@ -201,6 +201,13 @@
         </div>
       </div>
     </div>
+    <p style="font-size:0.82rem; color:var(--text-dim); margin:20px 0 0; max-width:60ch;">
+      A precise note on "hidden": Tari's base layer natively hides <i>amounts</i> — that's a
+      protocol guarantee. Hiding <i>who signed a contract call</i> is different: our contracts
+      simply never read or store the caller's public key, which only holds up if the caller signs
+      each sensitive call with a fresh account. That's an engineering choice we make and document,
+      not a cryptographic guarantee the way the amount-hiding is.
+    </p>
   </section>
 
   <section>
