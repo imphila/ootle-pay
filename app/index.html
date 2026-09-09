@@ -1,113 +1,123 @@
 <title>Ootle Private Pay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f6f6f9;
-    --surface: #ffffff;
-    --surface-2: #edecf2;
-    --border: #dcdae3;
-    --text: #16141c;
-    --text-dim: #68657a;
-    --violet: #6d3fd6;
-    --violet-ink: #ffffff;
-    --bronze: #9c6a12;
-    --bronze-ink: #ffffff;
+    --bg: #f6f6f9; --surface: #ffffff; --surface-2: #edecf2; --border: #dcdae3;
+    --text: #16141c; --text-dim: #68657a;
+    --violet: #6d3fd6; --violet-ink: #ffffff; --violet-wash: #f1ecfc;
+    --bronze: #93610d; --bronze-ink: #ffffff; --bronze-wash: #f6eeda;
     --ok: #157a4d;
-    --focus: #6d3fd6;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
       --text: #e9e6f0; --text-dim: #9b96a9;
-      --violet: #a480f2; --violet-ink: #17102b;
-      --bronze: #dba14a; --bronze-ink: #241a06;
-      --ok: #4bd39a; --focus: #a480f2;
+      --violet: #a480f2; --violet-ink: #17102b; --violet-wash: #211a34;
+      --bronze: #dba14a; --bronze-ink: #241a06; --bronze-wash: #2b2110;
+      --ok: #4bd39a;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
     --text: #e9e6f0; --text-dim: #9b96a9;
-    --violet: #a480f2; --violet-ink: #17102b;
-    --bronze: #dba14a; --bronze-ink: #241a06;
-    --ok: #4bd39a; --focus: #a480f2;
+    --violet: #a480f2; --violet-ink: #17102b; --violet-wash: #211a34;
+    --bronze: #dba14a; --bronze-ink: #241a06; --bronze-wash: #2b2110;
+    --ok: #4bd39a;
     color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
   body { background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif; }
-
   a { color: inherit; }
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
 
   nav.top {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 28px; border-bottom: 1px solid var(--border);
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    padding: 18px 32px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace;
   }
-  .wordmark { font-size: 0.86rem; font-weight: 600; letter-spacing: 0.02em; display: flex; align-items: center; gap: 9px; }
-  .wordmark .bracket { color: var(--violet); }
-  nav.top .links { display: flex; gap: 22px; font-size: 0.8rem; }
+  .wordmark { font-size: 0.84rem; font-weight: 600; letter-spacing: 0.01em; }
+  nav.top .links { display: flex; gap: 24px; font-size: 0.8rem; }
   nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; }
   nav.top .links a.active { color: var(--text); border-color: var(--violet); }
   nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); }
   nav.top .net .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
 
-  .shell { max-width: 920px; margin: 0 auto; padding: 56px 28px 72px; }
+  .shell { max-width: 760px; margin: 0 auto; padding: 0 32px; }
+  section { padding: 44px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
 
-  .pitch h1 {
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-    font-size: clamp(1.6rem, 3vw, 2.15rem);
-    font-weight: 600; letter-spacing: -0.01em; margin: 0 0 14px; text-wrap: balance; max-width: 18ch;
+  .lede h1 {
+    font-family: "Fraunces", Georgia, serif; font-weight: 600; font-optical-sizing: auto;
+    font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.15; letter-spacing: -0.01em;
+    margin: 0 0 20px; text-wrap: balance; max-width: 15ch;
   }
-  .pitch p { font-size: 1.02rem; color: var(--text-dim); max-width: 60ch; margin: 0; }
+  .lede p { font-size: 1.03rem; color: var(--text-dim); max-width: 62ch; margin: 0 0 14px; }
+  .lede p:last-child { margin-bottom: 0; }
+  .lede b { color: var(--text); font-weight: 600; }
 
-  .entries { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 40px 0 48px; }
-  @media (max-width: 640px) { .entries { grid-template-columns: 1fr; } }
-  .entry {
-    border: 1px solid var(--border); border-radius: 4px; padding: 26px 26px 24px;
-    background: var(--surface); display: flex; flex-direction: column; gap: 10px;
-    border-top: 3px solid var(--entry-accent);
+  h2.kicker {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.74rem; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--text-dim); margin: 0 0 20px;
   }
-  .entry.merchant { --entry-accent: var(--bronze); }
-  .entry.pay { --entry-accent: var(--violet); }
-  .entry .tag {
-    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.7rem; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--entry-accent);
-  }
-  .entry h2 { font-size: 1.15rem; margin: 2px 0 0; font-weight: 600; }
-  .entry p { font-size: 0.88rem; color: var(--text-dim); margin: 0; flex-grow: 1; }
-  .entry .go {
-    margin-top: 6px; align-self: flex-start; text-decoration: none; font-size: 0.85rem; font-weight: 600;
-    padding: 8px 16px; border-radius: 4px; background: var(--entry-accent); color: var(--surface);
-  }
-  .entry.merchant .go { color: var(--bronze-ink); }
-  .entry.pay .go { color: var(--violet-ink); }
 
-  h3.section { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin: 0 0 14px; }
+  .receipts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 620px) { .receipts { grid-template-columns: 1fr; } }
+  .receipt {
+    border: 1px solid var(--border); border-radius: 3px; overflow: hidden; background: var(--surface);
+  }
+  .receipt .head { padding: 12px 16px; font-size: 0.78rem; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+  .receipt .head b { color: var(--text); }
+  .receipt dl { margin: 0; padding: 14px 16px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.8rem; }
+  .receipt dt { color: var(--text-dim); display: inline-block; width: 78px; }
+  .receipt dd { display: inline; margin: 0; }
+  .receipt .row { padding: 4px 0; }
+  .receipt.redacted .row.hidden dd { background: var(--surface-2); color: transparent; border-radius: 2px; user-select: none; }
+  .receipt.redacted .head { color: var(--ok); }
+  .receipt.redacted { border-color: var(--ok); }
 
-  table.arch { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-  table.arch th { text-align: left; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-dim); padding: 0 12px 10px 0; border-bottom: 1px solid var(--border); font-weight: 500; }
-  table.arch td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
-  table.arch td:first-child { font-weight: 600; white-space: nowrap; }
-  table.arch code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.85em; background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
-  table.arch tr:last-child td { border-bottom: none; }
+  .flow { display: flex; flex-direction: column; gap: 0; }
+  .flow .step { display: grid; grid-template-columns: 28px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--border); }
+  .flow .step:first-child { border-top: none; }
+  .flow .n { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--text-dim); font-size: 0.8rem; padding-top: 2px; }
+  .flow h3 { margin: 0 0 4px; font-size: 0.98rem; font-weight: 600; }
+  .flow p { margin: 0; font-size: 0.88rem; color: var(--text-dim); }
+  .flow code { background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 0.85em; }
+
+  .proof { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.8rem; }
+  .proof .line { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .proof .line:first-child { border-top: none; }
+  .proof .tag { color: var(--text-dim); width: 150px; flex-shrink: 0; }
+  .proof .hash { word-break: break-all; }
+  .proof .payload { color: var(--text-dim); }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 620px) { .split { grid-template-columns: 1fr; } }
+  .half { padding: 30px 32px; }
+  .half.merchant { background: var(--bronze-wash); }
+  .half.pay { background: var(--violet-wash); }
+  .half .tag { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .half.merchant .tag { color: var(--bronze); }
+  .half.pay .tag { color: var(--violet); }
+  .half h2 { font-family: "Fraunces", Georgia, serif; font-size: 1.4rem; font-weight: 600; margin: 6px 0 10px; }
+  .half p { font-size: 0.9rem; color: var(--text-dim); margin: 0 0 18px; max-width: 32ch; }
+  .half a.go { text-decoration: none; font-weight: 600; font-size: 0.86rem; padding: 9px 18px; border-radius: 3px; }
+  .half.merchant a.go { background: var(--bronze); color: var(--bronze-ink); }
+  .half.pay a.go { background: var(--violet); color: var(--violet-ink); }
 
   footer.site {
-    margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--border);
-    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
-    font-size: 0.78rem; color: var(--text-dim); font-family: "IBM Plex Mono", ui-monospace, monospace;
+    padding: 24px 32px 40px; max-width: 760px; margin: 0 auto;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    font-size: 0.76rem; color: var(--text-dim); font-family: "IBM Plex Mono", ui-monospace, monospace;
   }
   footer.site a { text-decoration: underline; text-underline-offset: 2px; }
-  footer.site dl { margin: 0; }
-  footer.site dt { display: inline; }
-  footer.site dd { display: inline; margin: 0 18px 0 6px; word-break: break-all; }
 </style>
 
 <nav class="top">
-  <div class="wordmark"><span class="bracket">[</span>OOTLE PRIVATE PAY<span class="bracket">]</span></div>
+  <div class="wordmark">Ootle Private Pay</div>
   <div class="links">
     <a href="https://matteozero.github.io/ootle-private-pay/index.html" class="active">Overview</a>
     <a href="https://matteozero.github.io/ootle-private-pay/merchant.html">Merchant Console</a>
@@ -117,59 +127,111 @@
 </nav>
 
 <div class="shell">
-  <div class="pitch">
-    <h1>Payments infrastructure without the paper trail.</h1>
-    <p>A decentralized third-party payment gateway on Tari Ootle. Merchants stake a public,
-      slashable bond to get API access. Customers pay them — one-off or on subscription —
-      without ever putting their amount or identity on the record.</p>
-  </div>
+  <section class="lede">
+    <h1>Payment infrastructure that forgets on purpose.</h1>
+    <p>Every card processor keeps a ledger of who paid whom, how much, and when — that ledger
+      is the business model. It's also a permanent, correlatable record of everything you've
+      ever bought.</p>
+    <p><b>Ootle Private Pay</b> is a third-party payment gateway, built as three smart contracts
+      on Tari Ootle, that keeps only the part of that ledger a platform actually needs to
+      operate — a merchant's public stake, a small platform fee — and structurally cannot
+      record the rest: not the amount, not the payer, not the link between one subscription
+      payment and the next.</p>
+  </section>
 
-  <div class="entries">
-    <div class="entry merchant">
-      <span class="tag">For businesses</span>
-      <h2>Merchant Console</h2>
-      <p>Stake to register, manage your tier, publish subscription plans, and claim
-        revenue from your customers.</p>
-      <a class="go" href="https://matteozero.github.io/ootle-private-pay/merchant.html">Open console →</a>
+  <section>
+    <h2 class="kicker">What actually lands on-chain</h2>
+    <p style="font-size:0.9rem; color:var(--text-dim); margin:-6px 0 20px; max-width:60ch;">
+      This isn't a mockup — it's the real event emitted by transaction
+      <code>0bc120c2…8e3f58</code> on the esme testnet, next to what an equivalent card payment
+      leaves behind.</p>
+    <div class="receipts">
+      <div class="receipt">
+        <div class="head">A typical processor's log</div>
+        <dl>
+          <div class="row"><dt>time</dt><dd>2026-09-09 06:24:11</dd></div>
+          <div class="row"><dt>customer</dt><dd>cus_4f8a…q92k</dd></div>
+          <div class="row"><dt>card</dt><dd>•••• 4242</dd></div>
+          <div class="row"><dt>merchant</dt><dd>2ed28dc9…b444f</dd></div>
+          <div class="row"><dt>amount</dt><dd>$214.50</dd></div>
+          <div class="row"><dt>memo</dt><dd>Invoice #2291</dd></div>
+        </dl>
+      </div>
+      <div class="receipt redacted">
+        <div class="head"><b>PrivatePay.PaymentProcessed</b> — the real event</div>
+        <dl>
+          <div class="row hidden"><dt>time</dt><dd>█████████████</dd></div>
+          <div class="row hidden"><dt>customer</dt><dd>█████████████</dd></div>
+          <div class="row hidden"><dt>amount</dt><dd>█████████████</dd></div>
+          <div class="row"><dt>merchant</dt><dd>2ed28dc9…b444f</dd></div>
+          <div class="row"><dt>fee</dt><dd>3</dd></div>
+        </dl>
+      </div>
     </div>
-    <div class="entry pay">
-      <span class="tag">For customers</span>
-      <h2>Pay</h2>
-      <p>Send a merchant an anonymous one-off payment, or subscribe to a plan without
-        linking your wallet to what you bought.</p>
-      <a class="go" href="https://matteozero.github.io/ootle-private-pay/pay.html">Open pay →</a>
+  </section>
+
+  <section>
+    <h2 class="kicker">How it works</h2>
+    <div class="flow">
+      <div class="step">
+        <div class="n">01</div>
+        <div>
+          <h3>A merchant stakes to register</h3>
+          <p>Public and slashable — <code>merchant_registry</code> ties a tier (Basic / Standard
+            / Premium) to how much a merchant has staked, so accountability doesn't depend on
+            anyone trusting the platform.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">02</div>
+        <div>
+          <h3>A customer pays privately</h3>
+          <p><code>private_pay</code> checks the merchant is registered and takes a small,
+            tier-priced fee. The actual transfer — amount, recipient — travels as a native
+            Ootle stealth transaction that this contract, and the chain, never see.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">03</div>
+        <div>
+          <h3>Or subscribes, without a paper trail</h3>
+          <p><code>subscription</code> keeps plan prices public but never reads a wallet's
+            public key — every renewal is looked up by a secret the subscriber alone chooses,
+            so two payments six months apart can't be linked to the same person.</p>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <h3 class="section">How the privacy split works</h3>
-  <table class="arch">
-    <tr><th>Layer</th><th>Contract</th><th>Identity</th><th>Why</th></tr>
-    <tr>
-      <td>Merchant accountability</td>
-      <td><code>merchant_registry</code></td>
-      <td>Public</td>
-      <td>Merchants want a public reputation; stake + slash needs an identifiable address.</td>
-    </tr>
-    <tr>
-      <td>One-off payments</td>
-      <td><code>private_pay</code></td>
-      <td>Fee only</td>
-      <td>The platform never sees the payment itself — only a small per-tier fee.</td>
-    </tr>
-    <tr>
-      <td>Subscriptions</td>
-      <td><code>subscription</code></td>
-      <td>Decoupled</td>
-      <td>Price is already public; only the subscriber's link to it is worth hiding.</td>
-    </tr>
-  </table>
-
-  <footer class="site">
-    <span><a href="https://github.com/matteozero/ootle-private-pay">Source on GitHub</a></span>
-    <dl>
-      <dt>registry</dt><dd>component_1d32aca2…1aa7ed</dd>
-      <dt>pay</dt><dd>component_478fd847…2fdc623</dd>
-      <dt>subs</dt><dd>component_9addab1f…70c6c475</dd>
-    </dl>
-  </footer>
+  <section>
+    <h2 class="kicker">Live on the esme testnet</h2>
+    <div class="proof">
+      <div class="line"><span class="tag">merchant_registry</span><span class="hash">component_1d32aca2…1aa7ed</span></div>
+      <div class="line"><span class="tag">private_pay</span><span class="hash">component_478fd847…2fdc623</span></div>
+      <div class="line"><span class="tag">subscription</span><span class="hash">component_9addab1f…70c6c475</span></div>
+      <div class="line"><span class="tag">register tx</span><span class="hash">603c05e4…33bf8</span><span class="payload">MerchantRegistered {tier: Basic}</span></div>
+      <div class="line"><span class="tag">payment tx</span><span class="hash">0bc120c2…e3f58</span><span class="payload">PaymentProcessed {fee: 3}</span></div>
+      <div class="line"><span class="tag">subscribe tx</span><span class="hash">97cfc10a…8a3ab</span><span class="payload">SubscriptionRenewed {paid_until_period: 1}</span></div>
+    </div>
+  </section>
 </div>
+
+<div class="split">
+  <div class="half merchant">
+    <span class="tag">For businesses</span>
+    <h2>Run a gateway</h2>
+    <p>Stake to register, set your plan prices, and claim what your customers pay you.</p>
+    <a class="go" href="https://matteozero.github.io/ootle-private-pay/merchant.html">Open Merchant Console →</a>
+  </div>
+  <div class="half pay">
+    <span class="tag">For customers</span>
+    <h2>Pay a merchant</h2>
+    <p>Send an anonymous one-off payment, or subscribe without exposing who you are.</p>
+    <a class="go" href="https://matteozero.github.io/ootle-private-pay/pay.html">Open Pay →</a>
+  </div>
+</div>
+
+<footer class="site">
+  <span><a href="https://github.com/matteozero/ootle-private-pay">Source on GitHub</a></span>
+  <span>Contracts: Rust · WASM · Tari Ootle</span>
+</footer>
