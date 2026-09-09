@@ -1,0 +1,356 @@
+<title>Registry Admin — Ootle Pay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f6f9; --surface: #ffffff; --surface-2: #edecf2; --border: #dcdae3;
+    --text: #16141c; --text-dim: #68657a;
+    --accent: #b91c34; --accent-ink: #ffffff; --accent-dim: #fbe7ea;
+    --ok: #157a4d; --ok-bg: #e4f5ec;
+    --err: #b91c34; --err-bg: #fbe7ea;
+    --pending: #a3620a; --pending-bg: #faf0dd;
+    --focus: #b91c34;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
+      --text: #e9e6f0; --text-dim: #9b96a9;
+      --accent: #ff8a97; --accent-ink: #2a0d12; --accent-dim: #34151b;
+      --ok: #4bd39a; --ok-bg: #16281f;
+      --err: #ff8a97; --err-bg: #34151b;
+      --pending: #f2b544; --pending-bg: #33270f;
+      --focus: #ff8a97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
+    --text: #e9e6f0; --text-dim: #9b96a9;
+    --accent: #ff8a97; --accent-ink: #2a0d12; --accent-dim: #34151b;
+    --ok: #4bd39a; --ok-bg: #16281f;
+    --err: #ff8a97; --err-bg: #34151b;
+    --pending: #f2b544; --pending-bg: #33270f;
+    --focus: #ff8a97;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif; line-height: 1.5; }
+  a { color: inherit; }
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  nav.top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  .wordmark { font-size: 0.86rem; font-weight: 600; }
+  nav.top .links { display: flex; gap: 22px; font-size: 0.8rem; }
+  nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; }
+  nav.top .links a.active { color: var(--text); border-color: var(--accent); }
+  nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); }
+  nav.top .net .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+
+  .landing { max-width: 560px; margin: 0 auto; padding: 64px 28px; }
+  .landing h1 { font-size: 1.4rem; font-weight: 600; margin: 0 0 10px; }
+  .landing p.dek { color: var(--text-dim); font-size: 0.9rem; max-width: 52ch; margin: 0 0 24px; }
+  .connect-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 22px 24px; }
+
+  label { display: block; font-size: 0.76rem; color: var(--text-dim); margin-top: 12px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  input {
+    width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 5px; padding: 9px 11px; margin-top: 5px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.86rem;
+  }
+  input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .row { display: flex; gap: 12px; } .row > * { flex: 1; }
+  button {
+    margin-top: 16px; padding: 9px 17px; border-radius: 5px; border: none;
+    background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 0.86rem;
+    cursor: pointer; font-family: "IBM Plex Sans", sans-serif;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button:hover:not(:disabled) { filter: brightness(1.08); }
+  button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  button.ghost { background: transparent; color: var(--accent); padding: 4px 9px; margin-top: 0; font-size: 0.78rem; border: 1px solid var(--border); border-radius: 4px; }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-family: "IBM Plex Mono", ui-monospace, monospace; margin-top: 12px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--text-dim); }
+  .status:empty { display: none; }
+  .status.ok { background: var(--ok-bg); color: var(--ok); }
+  .status.err { background: var(--err-bg); color: var(--err); }
+  .status.pending { background: var(--pending-bg); color: var(--pending); }
+  .log { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px; margin-top: 10px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.76rem; white-space: pre-wrap; word-break: break-all; max-height: 160px; overflow-y: auto; color: var(--text-dim); }
+
+  #deniedPanel, #appPanels { display: none; }
+  .shell { max-width: 980px; margin: 0 auto; padding: 32px 28px 72px; }
+
+  .warn-banner {
+    background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 12px 16px; font-size: 0.82rem; margin-bottom: 22px;
+  }
+  .warn-banner b { font-weight: 600; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+  @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { background: var(--surface); padding: 16px 18px; }
+  .stat .label { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+  .stat .value { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.4rem; font-weight: 600; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .stat .sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 22px 24px; margin-bottom: 20px; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .card h2 { font-size: 1rem; font-weight: 600; margin: 0; }
+  .card .card-note { font-size: 0.82rem; color: var(--text-dim); margin: 4px 0 16px; max-width: 70ch; }
+
+  table.data { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  table.data th { text-align: left; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.66rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); padding: 0 10px 8px 0; border-bottom: 1px solid var(--border); font-weight: 500; }
+  table.data td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; vertical-align: middle; }
+  table.data tr:last-child td { border-bottom: none; }
+  table.data .actions { display: flex; gap: 6px; align-items: center; }
+  table.data input.slash-amt { width: 80px; margin: 0; padding: 5px 7px; font-size: 0.78rem; }
+  .pill { font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .pill.active { background: var(--ok-bg); color: var(--ok); }
+  .pill.inactive { background: var(--pending-bg); color: var(--pending); }
+  .empty-note { font-size: 0.84rem; color: var(--text-dim); padding: 8px 0; }
+  .overflow { overflow-x: auto; }
+
+  form.inline { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  form.inline > div { flex: 1; min-width: 140px; }
+  form.inline button { margin-top: 5px; white-space: nowrap; }
+</style>
+
+<nav class="top">
+  <div class="wordmark">Ootle Pay</div>
+  <div class="links">
+    <a href="https://imphila.github.io/ootle-pay/index.html">Overview</a>
+    <a href="https://imphila.github.io/ootle-pay/merchant.html">Merchant Console</a>
+    <a href="https://imphila.github.io/ootle-pay/pay.html">Pay</a>
+    <a href="https://imphila.github.io/ootle-pay/admin.html" class="active">Admin</a>
+  </div>
+  <div class="net"><span class="dot"></span> esme testnet</div>
+</nav>
+
+<div id="connectPanel" class="landing">
+  <h1>Registry admin</h1>
+  <p class="dek">Owner-only view of <code>merchant_registry</code>: who's registered, their
+    stake and tier, and the owner-gated actions (slash, finalize an exit, withdraw the treasury).
+    Connecting a wallet that isn't the registry's owner will show the same read-only stats but
+    none of the actions will succeed on-chain even if you can see the buttons.</p>
+  <div class="connect-card">
+    <label for="daemonUrl">Wallet daemon JSON-RPC URL</label>
+    <input id="daemonUrl" value="http://127.0.0.1:5100/json_rpc" />
+    <button id="connectBtn">Connect wallet</button>
+    <div id="connectStatus" class="status"></div>
+  </div>
+</div>
+
+<div id="appPanels">
+  <div class="shell">
+    <div id="ownerWarning" class="warn-banner" style="display:none">
+      <b>Heads up:</b> the connected wallet doesn't match the registry's owner key. You can see
+      the stats below (they're public — anyone querying the indexer sees the same thing), but
+      <code>slash</code>, <code>finalize_exit</code> and <code>withdraw_treasury</code> will be
+      rejected on-chain if you try them from this account.
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">Merchants registered</div><div class="value" id="statTotal">—</div><div class="sub" id="statActive">—</div></div>
+      <div class="stat"><div class="label">Basic / Standard / Premium</div><div class="value" id="statTiers">—</div><div class="sub">by tier</div></div>
+      <div class="stat"><div class="label">Total staked</div><div class="value" id="statStaked">—</div><div class="sub">across active merchants</div></div>
+      <div class="stat"><div class="label">Treasury</div><div class="value" id="statTreasury">—</div><div class="sub">from slashing</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Merchants</h2>
+        <button class="ghost" id="refreshBtn">Refresh</button>
+      </div>
+      <p class="card-note">Reconstructed from <code>MerchantRegistry</code>'s public event log
+        (who registered, staked more, requested exit) cross-checked against each merchant's live
+        <code>get_merchant_info</code> — not a database, just what's actually on-chain right now.</p>
+      <div class="overflow">
+        <table class="data" id="merchantsTable" style="display:none">
+          <tr><th>Merchant</th><th>Tier</th><th>Staked</th><th>Status</th><th>Finalize exit</th><th>Slash</th></tr>
+        </table>
+      </div>
+      <div class="empty-note" id="merchantsEmpty">No merchants registered yet.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Treasury</h2></div>
+      <p class="card-note">Accumulated from slashed stakes. Owner-only to withdraw.</p>
+      <button id="withdrawTreasuryBtn" class="secondary">Withdraw treasury</button>
+      <div id="treasuryStatus" class="status"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const OWNER_PUBLIC_KEY = "2ed28dc9c5dbc9d424d0ce5f05a4fcc7b3e6203e756a10157bed540f43fb444f";
+  const REGISTRY = "component_1d32aca29e61e70736d16f3e2603dffb6eb7859cfda60ab09977da73711aa7ed";
+  const INDEXER = "https://ootle-indexer-a.tari.com";
+
+  let daemonUrl = "", authToken = "", accountAddress = "", accountPublicKey = "", rpcId = 1;
+
+  async function rpc(method, params) {
+    const res = await fetch(daemonUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(authToken ? { Authorization: "Bearer " + authToken } : {}) },
+      body: JSON.stringify({ jsonrpc: "2.0", id: rpcId++, method, params }),
+    });
+    const body = await res.json();
+    if (body.error) throw new Error(body.error.message || JSON.stringify(body.error));
+    return body.result;
+  }
+  async function submitManifestAndWait(manifest, variables) {
+    const submitted = await rpc("transactions.submit_manifest", {
+      manifest, variables, seal_signer_key_id: null, signing_key_ids: [], max_fee: 100000, dry_run: false, blobs: {},
+    });
+    return rpc("transactions.wait_result", { transaction_id: submitted.transaction_id, timeout_secs: 60 });
+  }
+  async function dryRun(manifest, variables) {
+    return rpc("transactions.submit_manifest", {
+      manifest, variables, seal_signer_key_id: null, signing_key_ids: [], max_fee: 100000, dry_run: true, blobs: {},
+    });
+  }
+  function readScalar(result) {
+    const finalize = result && result.result;
+    if (!finalize || !finalize.execution_results.length) return null;
+    return finalize.execution_results[finalize.execution_results.length - 1].indexed.value;
+  }
+  function eventsSummary(result) {
+    const finalize = result && result.result;
+    if (!finalize) return "(no result yet — status: " + (result ? result.status : "?") + ")";
+    return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
+  }
+  function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
+  function short(pk) { return pk ? pk.slice(0, 10) + "…" + pk.slice(-8) : ""; }
+
+  async function fetchEvents(substateId) {
+    const res = await fetch(`${INDEXER}/transactions/events?substate_id=${substateId}&limit=500`);
+    const body = await res.json();
+    return (body.events || []).map(([txId, e]) => ({ txId, ...e }));
+  }
+
+  document.getElementById("connectBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("connectBtn");
+    const statusEl = document.getElementById("connectStatus");
+    btn.disabled = true;
+    setStatus(statusEl, "Connecting…", "pending");
+    try {
+      daemonUrl = document.getElementById("daemonUrl").value.trim();
+      const auth = await rpc("auth.request", { permissions: ["Admin"], credentials: "None" });
+      authToken = auth.token;
+      let accounts = await rpc("accounts.list", { offset: 0, limit: 1 });
+      let entry;
+      if (accounts.accounts.length === 0) { entry = (await rpc("accounts.create", {})).account; }
+      else { entry = accounts.accounts[0]; }
+      const account = entry.account ?? entry;
+      accountAddress = account.component_address;
+      accountPublicKey = account.owner_public_key;
+
+      document.getElementById("connectPanel").style.display = "none";
+      document.getElementById("appPanels").style.display = "block";
+      document.getElementById("ownerWarning").style.display = accountPublicKey === OWNER_PUBLIC_KEY ? "none" : "block";
+
+      await refreshAll();
+    } catch (err) {
+      setStatus(statusEl, "Failed: " + err.message, "err");
+      btn.disabled = false;
+    }
+  });
+
+  async function refreshAll() {
+    const events = await fetchEvents(REGISTRY);
+    const registered = events.filter((e) => e.topic === "MerchantRegistry.MerchantRegistered");
+    const merchantKeys = [...new Set(registered.map((e) => e.payload.merchant))];
+
+    const rows = [];
+    for (const pk of merchantKeys) {
+      try {
+        const infoRaw = await dryRun(`fn main() {\n    let registry = var!["registry"];\n    registry.get_merchant_info(PublicKey("${pk}"));\n}`, { registry: REGISTRY });
+        const info = readScalar(infoRaw);
+        if (!info) continue;
+        rows.push({ pk, staked: Number(info[0]), tier: info[1], active: info[2] });
+      } catch { /* fully exited (finalize_exit already removed them) - omit */ }
+    }
+
+    document.getElementById("statTotal").textContent = String(rows.length);
+    document.getElementById("statActive").textContent = `${rows.filter((r) => r.active).length} active`;
+    const tierCounts = { Basic: 0, Standard: 0, Premium: 0 };
+    rows.forEach((r) => { if (r.active && tierCounts[r.tier] != null) tierCounts[r.tier]++; });
+    document.getElementById("statTiers").textContent = `${tierCounts.Basic} / ${tierCounts.Standard} / ${tierCounts.Premium}`;
+    document.getElementById("statStaked").textContent = rows.filter((r) => r.active).reduce((s, r) => s + r.staked, 0) + " XTR";
+
+    try {
+      const treasuryRaw = await dryRun(`fn main() {\n    let registry = var!["registry"];\n    registry.treasury_balance();\n}`, { registry: REGISTRY });
+      document.getElementById("statTreasury").textContent = readScalar(treasuryRaw) + " XTR";
+    } catch { document.getElementById("statTreasury").textContent = "—"; }
+
+    const table = document.getElementById("merchantsTable");
+    const empty = document.getElementById("merchantsEmpty");
+    if (rows.length === 0) { table.style.display = "none"; empty.style.display = "block"; return; }
+    empty.style.display = "none"; table.style.display = "table";
+    table.querySelectorAll("tr:not(:first-child)").forEach((r) => r.remove());
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${short(r.pk)}</td>
+        <td>${r.tier}</td>
+        <td>${r.staked} XTR</td>
+        <td><span class="pill ${r.active ? "active" : "inactive"}">${r.active ? "active" : "exit requested"}</span></td>
+        <td>${r.active ? "—" : `<div class="actions"><input class="slash-amt" data-finalize-account="${r.pk}" placeholder="account_..." /><button class="ghost" data-finalize="${r.pk}">Finalize</button></div>`}</td>
+        <td><div class="actions"><input class="slash-amt" type="number" value="${Math.min(100, r.staked)}" data-slash-amt="${r.pk}" /><button class="ghost" data-slash="${r.pk}">Slash</button></div></td>
+      `;
+      table.appendChild(tr);
+    }
+    table.querySelectorAll("[data-slash]").forEach((btn) => btn.addEventListener("click", () => {
+      const pk = btn.dataset.slash;
+      const amt = table.querySelector(`[data-slash-amt="${pk}"]`).value;
+      slashMerchant(pk, amt);
+    }));
+    table.querySelectorAll("[data-finalize]").forEach((btn) => btn.addEventListener("click", () => {
+      const pk = btn.dataset.finalize;
+      const acct = table.querySelector(`[data-finalize-account="${pk}"]`).value.trim();
+      if (!acct) { alert("Enter the merchant's account address to receive the refund."); return; }
+      finalizeExit(pk, acct);
+    }));
+  }
+
+  async function slashMerchant(pk, amount) {
+    if (!confirm(`Slash ${amount} XTR from ${short(pk)}? This cannot be undone.`)) return;
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    registry.slash(PublicKey("${pk}"), ${amount}u64);\n}`,
+        { registry: REGISTRY }
+      );
+      alert(eventsSummary(result) || "Slashed.");
+      refreshAll();
+    } catch (err) { alert("Failed: " + err.message); }
+  }
+
+  async function finalizeExit(pk, merchantAccount) {
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    let merchant_account = var!["merchant_account"];\n    let refund = registry.finalize_exit(PublicKey("${pk}"));\n    merchant_account.deposit(refund);\n}`,
+        { registry: REGISTRY, merchant_account: merchantAccount }
+      );
+      alert(eventsSummary(result) || "Finalized.");
+      refreshAll();
+    } catch (err) { alert("Failed: " + err.message); }
+  }
+
+  document.getElementById("withdrawTreasuryBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("treasuryStatus");
+    setStatus(statusEl, "Withdrawing…", "pending");
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    let account = var!["account"];\n    let treasury = registry.withdraw_treasury();\n    account.deposit(treasury);\n}`,
+        { registry: REGISTRY, account: accountAddress }
+      );
+      setStatus(statusEl, "Withdrawn to your connected account.", "ok");
+      refreshAll();
+    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+  });
+
+  document.getElementById("refreshBtn").addEventListener("click", refreshAll);
+</script>

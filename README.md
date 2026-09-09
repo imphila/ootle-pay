@@ -7,8 +7,9 @@ A decentralized, stake-gated third-party payment gateway, built natively on
 Third-party merchants stake a bond to register (transparent, accountable, slashable — no KYC, no
 centralized approval process). Once registered, they can sell one-off products or run subscription
 plans, with real order counts and revenue tracked on-chain for every product and plan they run.
-Nothing here is custodial: money moves directly from a customer's account to a merchant's revenue
-vault, which only the merchant can claim from.
+Payments themselves are non-custodial: money moves directly from a customer's account to a
+merchant's revenue vault, which only the merchant can claim from. The stake itself is the one
+exception — see the trust assumption called out under `merchant_registry` below.
 
 **All three contracts are live on the Tari Ootle `esme` testnet**, wired together, and exercised
 end to end with real transactions — see [Live deployment](#live-deployment) below. A small web app
@@ -57,6 +58,16 @@ gateway.
 Stake-gated registry. Merchants stake a bond (`min_stake` of a deployer-chosen resource), get
 tiered (Basic / Standard / Premium, at 1×/5×/20× `min_stake`), and can be slashed into the
 registry's treasury for misbehaviour found in off-chain/other-contract dispute resolution.
+
+**Trust assumption, stated plainly:** `request_exit` is self-service (any merchant can mark
+themselves inactive at any time), but `finalize_exit` — the call that actually returns a
+merchant's stake — along with `slash` and `withdraw_treasury`, is owner-only: only whoever
+deployed this registry component can release a merchant's stake back to them or confiscate it.
+This is a deliberate choice, not an oversight — a merchant can't unilaterally walk away from an
+active dispute with their bond in hand — but it does mean the registry owner is a trusted party
+for stake custody specifically, unlike the fully non-custodial `storefront`/`subscription`
+payment flows below, where money never passes through anyone but the two parties to the
+transaction.
 
 ```rust
 new(stake_resource: ResourceAddress, min_stake: Amount) -> Component<Self>
