@@ -3,12 +3,11 @@
 
 use tari_template_lib::prelude::*;
 
-/// Recurring subscription payments where the plan price is public (merchants publish their own
-/// pricing anyway - hiding it would add nothing) but nothing here is ever keyed by, or even reads,
-/// `CallerContext::transaction_signer_public_key()`. Every lookup is by an opaque
-/// `subscriber_secret` chosen by the subscriber themselves. As long as they sign each renewal with a
-/// fresh, throwaway account (a wallet-side practice, not something this contract can or needs to
-/// enforce), nothing here links one renewal to the next or to the subscriber's real identity.
+/// Recurring subscription payments. Plan price and merchant are public (merchants publish their
+/// own pricing anyway), and subscriptions are keyed by the subscriber's own signing key, read via
+/// `CallerContext::transaction_signer_public_key()` - ordinary identity tracking, no anonymity
+/// engineering (Ootle's L2 can't offer a genuine cryptographic guarantee for "who signed this
+/// call" the way L1 confidential transactions hide amounts, so this contract doesn't pretend to).
 #[template]
 mod subscription_template {
     use std::collections::HashMap;
@@ -19,7 +18,7 @@ mod subscription_template {
         registry: ComponentManager,
         next_plan_id: u32,
         plans: HashMap<u32, Plan>,
-        subscriptions: HashMap<String, Subscription>,
+        subscriptions: HashMap<RistrettoPublicKeyBytes, Subscription>,
         badge_manager: ResourceManager,
     }
 
@@ -101,52 +100,54 @@ mod subscription_template {
             ]);
         }
 
-        /// Subscribes to `plan_id` for the first time under `subscriber_secret` - an opaque string
-        /// the subscriber picks themselves (e.g. a random hex string generated client-side) and keeps
-        /// private, used in place of any on-chain identity thereafter. `payment` must be exactly the
-        /// plan's price in its resource. Returns a membership badge NFT for the caller to deposit into
-        /// any account they choose; use `renew` (not this method again) for subsequent periods.
+        /// Subscribes the caller to `plan_id` for the first time. `payment` must be exactly the
+        /// plan's price in its resource. Returns a membership badge NFT for the caller to deposit
+        /// into any account they choose; use `renew` (not this method again) for subsequent periods.
         ///
         /// Callable by: anyone.
         ///
         /// # Panics
-        /// Panics if `subscriber_secret` is already subscribed to any plan.
-        pub fn subscribe(&mut self, plan_id: u32, subscriber_secret: String, payment: Bucket) -> Bucket {
+        /// Panics if the caller is already subscribed to any plan.
+        pub fn subscribe(&mut self, plan_id: u32, payment: Bucket) -> Bucket {
+            let subscriber = CallerContext::transaction_signer_public_key();
             assert!(
-                !self.subscriptions.contains_key(&subscriber_secret),
-                "This secret is already subscribed"
+                !self.subscriptions.contains_key(&subscriber),
+                "This account is already subscribed"
             );
             let paid_until_period = self.pay_into_plan(plan_id, payment);
-            self.subscriptions.insert(subscriber_secret.clone(), Subscription {
+            self.subscriptions.insert(subscriber, Subscription {
                 plan_id,
                 paid_until_period,
             });
 
             emit_event("SubscriptionRenewed", metadata![
                 "plan_id" => plan_id.to_string(),
+                "subscriber" => subscriber.to_string(),
                 "paid_until_period" => paid_until_period.to_string(),
             ]);
 
-            let badge_id = NonFungibleId::from_string(subscriber_secret);
+            let badge_id = NonFungibleId::from_string(subscriber.to_string());
             self.badge_manager
                 .mint_non_fungible(badge_id, &metadata!["plan_id" => plan_id.to_string()], &())
         }
 
-        /// Extends an existing subscription by one more billing period. `payment` must be exactly the
-        /// plan's price in its resource.
+        /// Extends the caller's existing subscription by one more billing period. `payment` must be
+        /// exactly the plan's price in its resource.
         ///
         /// Callable by: anyone.
         ///
         /// # Panics
-        /// Panics if `subscriber_secret` has no existing subscription to `plan_id`.
-        pub fn renew(&mut self, plan_id: u32, subscriber_secret: String, payment: Bucket) {
+        /// Panics if the caller has no existing subscription to `plan_id`.
+        pub fn renew(&mut self, plan_id: u32, payment: Bucket) {
+            let subscriber = CallerContext::transaction_signer_public_key();
             let paid_until_period = self.pay_into_plan(plan_id, payment);
-            let entry = self.subscriptions.get_mut(&subscriber_secret).expect("No existing subscription");
-            assert_eq!(entry.plan_id, plan_id, "This secret is subscribed to a different plan");
+            let entry = self.subscriptions.get_mut(&subscriber).expect("No existing subscription");
+            assert_eq!(entry.plan_id, plan_id, "This account is subscribed to a different plan");
             entry.paid_until_period = paid_until_period;
 
             emit_event("SubscriptionRenewed", metadata![
                 "plan_id" => plan_id.to_string(),
+                "subscriber" => subscriber.to_string(),
                 "paid_until_period" => paid_until_period.to_string(),
             ]);
         }
@@ -162,12 +163,12 @@ mod subscription_template {
             paid_until_period
         }
 
-        pub fn is_active(&self, plan_id: u32, subscriber_secret: String) -> bool {
+        pub fn is_active(&self, plan_id: u32, subscriber: RistrettoPublicKeyBytes) -> bool {
             let Some(plan) = self.plans.get(&plan_id) else {
                 return false;
             };
             self.subscriptions
-                .get(&subscriber_secret)
+                .get(&subscriber)
                 .map(|s| s.plan_id == plan_id && s.paid_until_period > plan.current_period)
                 .unwrap_or(false)
         }

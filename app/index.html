@@ -1,4 +1,4 @@
-<title>Ootle Private Pay</title>
+<title>Ootle Pay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -75,9 +75,9 @@
   .receipt dt { color: var(--text-dim); display: inline-block; width: 78px; }
   .receipt dd { display: inline; margin: 0; }
   .receipt .row { padding: 4px 0; }
-  .receipt.redacted .row.hidden dd { background: var(--surface-2); color: transparent; border-radius: 2px; user-select: none; }
-  .receipt.redacted .head { color: var(--ok); }
-  .receipt.redacted { border-color: var(--ok); }
+  .receipt.verified dd { color: var(--ok); }
+  .receipt.verified .head { color: var(--ok); }
+  .receipt.verified { border-color: var(--ok); }
 
   .flow { display: flex; flex-direction: column; gap: 0; }
   .flow .step { display: grid; grid-template-columns: 28px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--border); }
@@ -117,54 +117,52 @@
 </style>
 
 <nav class="top">
-  <div class="wordmark">Ootle Private Pay</div>
+  <div class="wordmark">Ootle Pay</div>
   <div class="links">
-    <a href="https://imphila.github.io/ootle-private-pay/index.html" class="active">Overview</a>
-    <a href="https://imphila.github.io/ootle-private-pay/merchant.html">Merchant Console</a>
-    <a href="https://imphila.github.io/ootle-private-pay/pay.html">Pay</a>
+    <a href="https://imphila.github.io/ootle-pay/index.html" class="active">Overview</a>
+    <a href="https://imphila.github.io/ootle-pay/merchant.html">Merchant Console</a>
+    <a href="https://imphila.github.io/ootle-pay/pay.html">Pay</a>
   </div>
   <div class="net"><span class="dot"></span> esme testnet</div>
 </nav>
 
 <div class="shell">
   <section class="lede">
-    <h1>Payment infrastructure that forgets on purpose.</h1>
-    <p>Every card processor keeps a ledger of who paid whom, how much, and when — that ledger
-      is the business model. It's also a permanent, correlatable record of everything you've
-      ever bought.</p>
-    <p><b>Ootle Private Pay</b> is a third-party payment gateway, built as three smart contracts
-      on Tari Ootle, that keeps only the part of that ledger a platform actually needs to
-      operate — a merchant's public stake, a small platform fee — and structurally cannot
-      record the rest: not the amount, not the payer, not the link between one subscription
-      payment and the next.</p>
+    <h1>A payment gateway secured by stake, not trust.</h1>
+    <p>Most payment gateways ask you to trust a company: a compliance team, a chargeback
+      process, a reputation score nobody outside the company can verify. That trust is opaque
+      by construction — you can't audit a private ledger.</p>
+    <p><b>Ootle Pay</b> is a third-party payment gateway, built as three smart contracts on Tari
+      Ootle, that replaces that opaque trust with a bond: merchants post a public, slashable
+      stake instead of passing KYC. Every order and every subscription renewal is a plain event
+      on a public chain, so a merchant's order history and revenue are auditable by anyone — not
+      just asserted by a platform.</p>
   </section>
 
   <section>
     <h2 class="kicker">What actually lands on-chain</h2>
     <p style="font-size:0.9rem; color:var(--text-dim); margin:-6px 0 20px; max-width:60ch;">
-      This isn't a mockup — it's the real event emitted by transaction
-      <code>0bc120c2…8e3f58</code> on the esme testnet, next to what an equivalent card payment
-      leaves behind.</p>
+      Not a mockup — the real event emitted by transaction <code>d338ff79…86dd28</code> on the
+      esme testnet, next to what a typical processor keeps locked in a private database.</p>
     <div class="receipts">
       <div class="receipt">
-        <div class="head">A typical processor's log</div>
+        <div class="head">A typical processor's private ledger</div>
         <dl>
-          <div class="row"><dt>time</dt><dd>2026-09-09 06:24:11</dd></div>
-          <div class="row"><dt>customer</dt><dd>cus_4f8a…q92k</dd></div>
-          <div class="row"><dt>card</dt><dd>•••• 4242</dd></div>
-          <div class="row"><dt>merchant</dt><dd>2ed28dc9…b444f</dd></div>
-          <div class="row"><dt>amount</dt><dd>$214.50</dd></div>
-          <div class="row"><dt>memo</dt><dd>Invoice #2291</dd></div>
+          <div class="row"><dt>where</dt><dd>their database</dd></div>
+          <div class="row"><dt>who can read it</dt><dd>them, only</dd></div>
+          <div class="row"><dt>you get</dt><dd>a dashboard they built</dd></div>
+          <div class="row"><dt>verify it yourself?</dt><dd>no</dd></div>
         </dl>
       </div>
-      <div class="receipt redacted">
-        <div class="head"><b>PrivatePay.PaymentProcessed</b> — the real event</div>
+      <div class="receipt verified">
+        <div class="head"><b>Storefront.OrderPlaced</b> — the real event</div>
         <dl>
-          <div class="row hidden"><dt>time</dt><dd>█████████████</dd></div>
-          <div class="row hidden"><dt>customer</dt><dd>█████████████</dd></div>
-          <div class="row hidden"><dt>amount</dt><dd>█████████████</dd></div>
+          <div class="row"><dt>where</dt><dd>public esme ledger</dd></div>
+          <div class="row"><dt>product_id</dt><dd>0</dd></div>
           <div class="row"><dt>merchant</dt><dd>2ed28dc9…b444f</dd></div>
-          <div class="row"><dt>fee</dt><dd>3</dd></div>
+          <div class="row"><dt>buyer</dt><dd>2ed28dc9…b444f</dd></div>
+          <div class="row"><dt>amount</dt><dd>20</dd></div>
+          <div class="row"><dt>order_number</dt><dd>1</dd></div>
         </dl>
       </div>
     </div>
@@ -179,46 +177,41 @@
           <h3>A merchant stakes to register</h3>
           <p>Public and slashable — <code>merchant_registry</code> ties a tier (Basic / Standard
             / Premium) to how much a merchant has staked, so accountability doesn't depend on
-            anyone trusting the platform.</p>
+            anyone trusting the platform, or the platform trusting the merchant.</p>
         </div>
       </div>
       <div class="step">
         <div class="n">02</div>
         <div>
-          <h3>A customer pays privately</h3>
-          <p><code>private_pay</code> checks the merchant is registered and takes a small,
-            tier-priced fee. The actual transfer — amount, recipient — travels as a native
-            Ootle stealth transaction that this contract, and the chain, never see.</p>
+          <h3>A customer buys a product</h3>
+          <p><code>storefront</code> checks the merchant is registered, takes the payment into a
+            per-product revenue vault, and emits an <code>OrderPlaced</code> event — so the
+            merchant's order count and revenue for that product are a chain query away, not a
+            number they self-report.</p>
         </div>
       </div>
       <div class="step">
         <div class="n">03</div>
         <div>
-          <h3>Or subscribes, without a paper trail</h3>
-          <p><code>subscription</code> keeps plan prices public but never reads a wallet's
-            public key — every renewal is looked up by a secret the subscriber alone chooses,
-            so two payments six months apart can't be linked to the same person.</p>
+          <h3>Or subscribes to a plan</h3>
+          <p><code>subscription</code> tracks each subscriber by their own account, advancing
+            billing periods that the merchant drives (there's no on-chain wall-clock), and pays
+            plan revenue into a vault only that plan's merchant can claim.</p>
         </div>
       </div>
     </div>
-    <p style="font-size:0.82rem; color:var(--text-dim); margin:20px 0 0; max-width:60ch;">
-      A precise note on "hidden": Tari's base layer natively hides <i>amounts</i> — that's a
-      protocol guarantee. Hiding <i>who signed a contract call</i> is different: our contracts
-      simply never read or store the caller's public key, which only holds up if the caller signs
-      each sensitive call with a fresh account. That's an engineering choice we make and document,
-      not a cryptographic guarantee the way the amount-hiding is.
-    </p>
   </section>
 
   <section>
     <h2 class="kicker">Live on the esme testnet</h2>
     <div class="proof">
       <div class="line"><span class="tag">merchant_registry</span><span class="hash">component_1d32aca2…1aa7ed</span></div>
-      <div class="line"><span class="tag">private_pay</span><span class="hash">component_478fd847…2fdc623</span></div>
-      <div class="line"><span class="tag">subscription</span><span class="hash">component_9addab1f…70c6c475</span></div>
+      <div class="line"><span class="tag">storefront</span><span class="hash">component_19ca2661…7229b540f</span></div>
+      <div class="line"><span class="tag">subscription</span><span class="hash">component_61cbdff6…797185a84</span></div>
       <div class="line"><span class="tag">register tx</span><span class="hash">603c05e4…33bf8</span><span class="payload">MerchantRegistered {tier: Basic}</span></div>
-      <div class="line"><span class="tag">payment tx</span><span class="hash">0bc120c2…e3f58</span><span class="payload">PaymentProcessed {fee: 3}</span></div>
-      <div class="line"><span class="tag">subscribe tx</span><span class="hash">97cfc10a…8a3ab</span><span class="payload">SubscriptionRenewed {paid_until_period: 1}</span></div>
+      <div class="line"><span class="tag">create product tx</span><span class="hash">3512865e…8b83932</span><span class="payload">ProductCreated {price: 20}</span></div>
+      <div class="line"><span class="tag">buy tx</span><span class="hash">d338ff79…86dd28</span><span class="payload">OrderPlaced {amount: 20, order_number: 1}</span></div>
+      <div class="line"><span class="tag">subscribe tx</span><span class="hash">efd24898…2510d457</span><span class="payload">SubscriptionRenewed {paid_until_period: 1}</span></div>
     </div>
   </section>
 </div>
@@ -226,19 +219,19 @@
 <div class="split">
   <div class="half merchant">
     <span class="tag">For businesses</span>
-    <h2>Run a gateway</h2>
-    <p>Stake to register, set your plan prices, and claim what your customers pay you.</p>
-    <a class="go" href="https://imphila.github.io/ootle-private-pay/merchant.html">Open Merchant Console →</a>
+    <h2>Run a storefront</h2>
+    <p>Stake to register, list products and plans, and track every order and dollar in one dashboard.</p>
+    <a class="go" href="https://imphila.github.io/ootle-pay/merchant.html">Open Merchant Console →</a>
   </div>
   <div class="half pay">
     <span class="tag">For customers</span>
     <h2>Pay a merchant</h2>
-    <p>Send an anonymous one-off payment, or subscribe without exposing who you are.</p>
-    <a class="go" href="https://imphila.github.io/ootle-private-pay/pay.html">Open Pay →</a>
+    <p>Buy a product outright, or subscribe to a plan — straight from your own wallet, no custodian in between.</p>
+    <a class="go" href="https://imphila.github.io/ootle-pay/pay.html">Open Pay →</a>
   </div>
 </div>
 
 <footer class="site">
-  <span><a href="https://github.com/imphila/ootle-private-pay">Source on GitHub</a></span>
+  <span><a href="https://github.com/imphila/ootle-pay">Source on GitHub</a></span>
   <span>Contracts: Rust · WASM · Tari Ootle</span>
 </footer>

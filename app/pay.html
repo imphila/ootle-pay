@@ -1,4 +1,4 @@
-<title>Pay — Ootle Private Pay</title>
+<title>Pay — Ootle Pay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -44,8 +44,7 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 18px 28px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace;
   }
-  .wordmark { font-size: 0.86rem; font-weight: 600; display: flex; align-items: center; gap: 9px; }
-  .wordmark .bracket { color: var(--accent); }
+  .wordmark { font-size: 0.86rem; font-weight: 600; }
   nav.top .links { display: flex; gap: 22px; font-size: 0.8rem; }
   nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; }
   nav.top .links a.active { color: var(--text); border-color: var(--accent); }
@@ -78,8 +77,6 @@
   }
   input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
   .row { display: flex; gap: 10px; } .row > * { flex: 1; }
-  .row.tight { align-items: flex-end; }
-  .row.tight button { margin-top: 5px; white-space: nowrap; }
 
   button.primary {
     width: 100%; margin-top: 18px; padding: 12px 18px; border-radius: 7px; border: none;
@@ -88,7 +85,7 @@
   }
   button.primary:disabled { opacity: 0.5; cursor: default; }
   button.primary:hover:not(:disabled) { filter: brightness(1.08); }
-  button.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); padding: 9px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-family: "IBM Plex Sans", sans-serif; }
+  button.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); padding: 9px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-family: "IBM Plex Sans", sans-serif; width: 100%; margin-top: 10px; }
 
   .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-family: "IBM Plex Mono", ui-monospace, monospace; margin-top: 14px; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); color: var(--text-dim); }
   .status:empty { display: none; }
@@ -100,20 +97,21 @@
 
   #payView, #subView { display: none; }
   #appPanels { display: none; }
+  .balance { text-align: center; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 14px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
 </style>
 
 <nav class="top">
-  <div class="wordmark"><span class="bracket">[</span>OOTLE PRIVATE PAY<span class="bracket">]</span></div>
+  <div class="wordmark">Ootle Pay</div>
   <div class="links">
-    <a href="https://imphila.github.io/ootle-private-pay/index.html">Overview</a>
-    <a href="https://imphila.github.io/ootle-private-pay/merchant.html">Merchant Console</a>
-    <a href="https://imphila.github.io/ootle-private-pay/pay.html" class="active">Pay</a>
+    <a href="https://imphila.github.io/ootle-pay/index.html">Overview</a>
+    <a href="https://imphila.github.io/ootle-pay/merchant.html">Merchant Console</a>
+    <a href="https://imphila.github.io/ootle-pay/pay.html" class="active">Pay</a>
   </div>
   <div class="net"><span class="dot"></span> esme testnet</div>
 </nav>
 
 <div class="shell">
-  <h1 class="page">Pay privately</h1>
+  <h1 class="page">Pay a merchant</h1>
 
   <div id="connectPanel" class="card">
     <label for="daemonUrl">Wallet daemon JSON-RPC URL</label>
@@ -123,41 +121,40 @@
   </div>
 
   <div id="appPanels">
-    <div class="status" id="walletBalance" style="margin-bottom:14px; display:flex;">—</div>
+    <div class="balance" id="walletBalance">—</div>
     <div class="switch">
-      <button id="tabPay" class="active">One-time payment</button>
+      <button id="tabPay" class="active">Buy a product</button>
       <button id="tabSub">Subscribe</button>
     </div>
 
     <div id="payView" class="card">
-      <div class="callout">Amount and recipient stay hidden — only a small per-tier platform fee is ever recorded on-chain.</div>
+      <div class="callout">Money moves straight from your account to the merchant's product
+        revenue vault — no custodian holds it in between.</div>
       <label for="payMerchant">Merchant public key</label>
       <input id="payMerchant" placeholder="paste or follow a merchant's payment link" />
-      <label for="payFee">Platform fee (XTR)</label>
-      <input id="payFee" value="3" />
-      <button id="payBtn" class="primary">Send payment</button>
+      <label for="payProductId">Product id</label>
+      <input id="payProductId" value="0" />
+      <label for="payPrice">Price (XTR)</label>
+      <input id="payPrice" value="20" />
+      <button id="payBtn" class="primary">Buy</button>
       <div id="payStatus" class="status"></div>
       <div id="payLog" class="log" style="display:none"></div>
     </div>
 
     <div id="subView" class="card">
-      <div class="callout">The plan's price is public, but this contract never reads your wallet's public key — your <b>subscriber secret</b> is your only identity here. Keep it, don't reuse it elsewhere.</div>
+      <div class="callout">Renew from the <b>same account</b> you subscribed with each period —
+        that's how the plan recognizes you.</div>
       <label for="subMerchant">Merchant public key</label>
       <input id="subMerchant" placeholder="paste or follow a merchant's payment link" />
       <div class="row">
         <div><label for="subPlanId">Plan id</label><input id="subPlanId" value="0" /></div>
         <div><label for="subPrice">Price (XTR)</label><input id="subPrice" value="50" /></div>
       </div>
-      <label for="subSecret">Your subscriber secret</label>
-      <div class="row tight">
-        <input id="subSecret" placeholder="a random string only you know" />
-        <button id="genSecretBtn" class="secondary">Generate</button>
-      </div>
       <div class="row">
         <button id="subscribeBtn" class="primary">Subscribe</button>
         <button id="renewBtn" class="primary">Renew</button>
       </div>
-      <button id="checkActiveBtn" class="secondary" style="margin-top:10px; width:100%;">Check subscription status</button>
+      <button id="checkActiveBtn" class="secondary">Check subscription status</button>
       <div id="subscribeStatus" class="status"></div>
       <div id="activeStatus" class="status"></div>
       <div id="subLog" class="log" style="display:none"></div>
@@ -166,9 +163,8 @@
 </div>
 
 <script>
-  const REGISTRY = "component_1d32aca29e61e70736d16f3e2603dffb6eb7859cfda60ab09977da73711aa7ed";
-  const PRIVATE_PAY = "component_478fd847553b9e896324b641fa3f60200d2f37ae04699c3628f09062f2fdc623";
-  const SUBSCRIPTION = "component_9addab1f01ebf52a7bc95db6fe2b54a00878ce305c6d2c62761eac4f70c6c475";
+  const STOREFRONT = "component_19ca26614a5e0641430c38fbafc9096274b2baac096814e8e7b376f7229b540f";
+  const SUBSCRIPTION = "component_61cbdff66b9eed52c66208a008b2e8453577c1d65243f71adff5ab3797185a84";
 
   let daemonUrl = "", authToken = "", accountAddress = "", accountPublicKey = "", rpcId = 1;
 
@@ -199,31 +195,29 @@
     return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
   }
   function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
+  function showLog(el, text) { el.style.display = "block"; el.textContent = text; }
 
   async function refreshBalance() {
     const el = document.getElementById("walletBalance");
-    if (!el) return;
     try {
       const res = await rpc("accounts.get_balances", { account: accountAddress, refresh: true });
       const xtr = res.balances.find((b) => b.token_symbol === "tTARI" || b.token_symbol === "XTR");
-      const amount = xtr ? (Number(xtr.balance) / 10 ** xtr.divisibility).toFixed(xtr.divisibility) : "0";
+      const amount = xtr ? (Number(xtr.balance) / 10 ** xtr.divisibility).toFixed(2) : "0";
       el.textContent = `Balance: ${amount} ${xtr ? xtr.token_symbol : "XTR"}`;
-    } catch (err) {
-      el.textContent = "Balance unavailable (" + err.message + ")";
-    }
+    } catch (err) { el.textContent = "Balance unavailable"; }
   }
-  function showLog(el, text) { el.style.display = "block"; el.textContent = text; }
 
-  // Prefill from a merchant-shared link, e.g. pay.html?merchant=<pk>&plan=0&price=50&mode=subscribe
+  // Prefill from a merchant-shared link, e.g. pay.html?merchant=<pk>&product=0&price=20&mode=subscribe&plan=0
   const params = new URLSearchParams(location.search);
   if (params.get("merchant")) {
     document.getElementById("payMerchant").value = params.get("merchant");
     document.getElementById("subMerchant").value = params.get("merchant");
   }
+  if (params.get("product")) document.getElementById("payProductId").value = params.get("product");
   if (params.get("plan")) document.getElementById("subPlanId").value = params.get("plan");
   if (params.get("price")) {
+    document.getElementById("payPrice").value = params.get("price");
     document.getElementById("subPrice").value = params.get("price");
-    document.getElementById("payFee").value = params.get("price");
   }
 
   function showTab(tab) {
@@ -235,11 +229,6 @@
   document.getElementById("tabPay").addEventListener("click", () => showTab("pay"));
   document.getElementById("tabSub").addEventListener("click", () => showTab("sub"));
   showTab(params.get("mode") === "subscribe" ? "sub" : "pay");
-
-  document.getElementById("genSecretBtn").addEventListener("click", () => {
-    const bytes = crypto.getRandomValues(new Uint8Array(16));
-    document.getElementById("subSecret").value = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-  });
 
   document.getElementById("connectBtn").addEventListener("click", async () => {
     const btn = document.getElementById("connectBtn");
@@ -269,17 +258,17 @@
   document.getElementById("payBtn").addEventListener("click", async () => {
     const statusEl = document.getElementById("payStatus");
     const logEl = document.getElementById("payLog");
-    const merchant = document.getElementById("payMerchant").value.trim();
-    const fee = document.getElementById("payFee").value.trim();
-    setStatus(statusEl, "Sending anonymous payment…", "pending");
+    const productId = document.getElementById("payProductId").value.trim();
+    const price = document.getElementById("payPrice").value.trim();
+    setStatus(statusEl, "Buying…", "pending");
     try {
       const result = await submitManifestAndWait(
-        `fn main() {\n    let pay = var!["pay"];\n    let account = var!["account"];\n    let fee = account.withdraw(XTR, ${fee}u64);\n    pay.pay(fee, PublicKey("${merchant}"));\n}`,
-        { pay: PRIVATE_PAY, account: accountAddress }
+        `fn main() {\n    let store = var!["store"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${price}u64);\n    store.buy(${productId}u32, payment);\n}`,
+        { store: STOREFRONT, account: accountAddress }
       );
       const summary = eventsSummary(result);
       showLog(logEl, summary);
-      setStatus(statusEl, summary.includes("PaymentProcessed") ? "Sent — only the fee is on the record." : "Rejected — see log.", summary.includes("PaymentProcessed") ? "ok" : "err");
+      setStatus(statusEl, summary.includes("OrderPlaced") ? "Order placed!" : "Rejected — see log.", summary.includes("OrderPlaced") ? "ok" : "err");
       refreshBalance();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   });
@@ -289,11 +278,9 @@
     const logEl = document.getElementById("subLog");
     const planId = document.getElementById("subPlanId").value.trim();
     const price = document.getElementById("subPrice").value.trim();
-    const secret = document.getElementById("subSecret").value.trim();
-    if (!secret) { setStatus(statusEl, "Generate or enter a secret first.", "err"); return; }
     setStatus(statusEl, method === "subscribe" ? "Subscribing…" : "Renewing…", "pending");
     try {
-      const badgeLine = method === "subscribe" ? `let badge = subs.subscribe(${planId}u32, "${secret}", payment);\n    account.deposit(badge);` : `subs.renew(${planId}u32, "${secret}", payment);`;
+      const badgeLine = method === "subscribe" ? `let badge = subs.subscribe(${planId}u32, payment);\n    account.deposit(badge);` : `subs.renew(${planId}u32, payment);`;
       const result = await submitManifestAndWait(
         `fn main() {\n    let subs = var!["subs"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${price}u64);\n    ${badgeLine}\n}`,
         { subs: SUBSCRIPTION, account: accountAddress }
@@ -309,10 +296,9 @@
   document.getElementById("checkActiveBtn").addEventListener("click", async () => {
     const statusEl = document.getElementById("activeStatus");
     const planId = document.getElementById("subPlanId").value.trim();
-    const secret = document.getElementById("subSecret").value.trim();
     setStatus(statusEl, "Checking…", "pending");
     try {
-      const result = await submitManifestAndWait(`fn main() {\n    let subs = var!["subs"];\n    subs.is_active(${planId}u32, "${secret}");\n}`, { subs: SUBSCRIPTION });
+      const result = await submitManifestAndWait(`fn main() {\n    let subs = var!["subs"];\n    subs.is_active(${planId}u32, PublicKey("${accountPublicKey}"));\n}`, { subs: SUBSCRIPTION });
       const active = readScalar(result);
       setStatus(statusEl, active ? "Active." : "Not active.", active ? "ok" : "err");
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }

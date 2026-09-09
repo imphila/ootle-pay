@@ -1,4 +1,4 @@
-<title>Merchant Console — Ootle Private Pay</title>
+<title>Merchant Console — Ootle Pay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -6,11 +6,11 @@
   :root {
     --bg: #f6f6f9; --surface: #ffffff; --surface-2: #edecf2; --border: #dcdae3;
     --text: #16141c; --text-dim: #68657a;
-    --accent: #9c6a12; --accent-ink: #ffffff; --accent-dim: #f3ead6;
+    --accent: #93610d; --accent-ink: #ffffff; --accent-dim: #f6eeda;
     --ok: #157a4d; --ok-bg: #e4f5ec;
     --err: #b91c34; --err-bg: #fbe7ea;
     --pending: #a3620a; --pending-bg: #faf0dd;
-    --focus: #9c6a12;
+    --focus: #93610d;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
@@ -45,35 +45,23 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 18px 28px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace;
   }
-  .wordmark { font-size: 0.86rem; font-weight: 600; display: flex; align-items: center; gap: 9px; }
-  .wordmark .bracket { color: var(--accent); }
+  .wordmark { font-size: 0.86rem; font-weight: 600; }
   nav.top .links { display: flex; gap: 22px; font-size: 0.8rem; }
   nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; }
   nav.top .links a.active { color: var(--text); border-color: var(--accent); }
   nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); }
   nav.top .net .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
 
-  .shell { max-width: 880px; margin: 0 auto; padding: 40px 28px 72px; }
+  /* ── Pre-connect landing ─────────────────────────────────────────────── */
+  .landing { max-width: 640px; margin: 0 auto; padding: 64px 28px; }
+  .landing h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 12px; }
+  .landing p.dek { color: var(--text-dim); font-size: 0.95rem; max-width: 52ch; margin: 0 0 28px; }
+  .landing .checklist { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .landing .checklist div { display: flex; gap: 10px; font-size: 0.88rem; align-items: baseline; }
+  .landing .checklist .num { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--accent); font-weight: 600; flex-shrink: 0; }
+  .connect-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 22px 24px; }
 
-  h1.page { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.3rem; font-weight: 600; margin: 0 0 4px; }
-  p.page-note { color: var(--text-dim); font-size: 0.9rem; margin: 0 0 28px; max-width: 60ch; }
-
-  .card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
-    padding: 22px 24px; margin-bottom: 18px;
-  }
-  .card h2 { font-size: 0.98rem; font-weight: 600; margin: 0 0 14px; }
-  .card h2 .sub { font-weight: 400; color: var(--text-dim); font-size: 0.82rem; display: block; margin-top: 2px; }
-
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 22px; }
-  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
-  .stat { background: var(--surface); padding: 16px 18px; }
-  .stat .label { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
-  .stat .value { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.3rem; font-weight: 600; margin-top: 5px; font-variant-numeric: tabular-nums; }
-  .stat .value.tier-Basic { color: var(--text-dim); }
-  .stat .value.tier-Standard { color: var(--accent); }
-  .stat .value.tier-Premium { color: var(--ok); }
-
+  /* ── Shared form/control primitives ──────────────────────────────────── */
   label { display: block; font-size: 0.76rem; color: var(--text-dim); margin-top: 12px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
   input {
     width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
@@ -81,7 +69,6 @@
   }
   input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
   .row { display: flex; gap: 12px; } .row > * { flex: 1; }
-
   button {
     margin-top: 16px; padding: 9px 17px; border-radius: 5px; border: none;
     background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 0.86rem;
@@ -90,99 +77,187 @@
   button:disabled { opacity: 0.5; cursor: default; }
   button:hover:not(:disabled) { filter: brightness(1.08); }
   button.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
-  button.ghost { background: transparent; color: var(--accent); padding: 4px 8px; margin-top: 0; font-size: 0.78rem; }
-
+  button.ghost { background: transparent; color: var(--accent); padding: 4px 9px; margin-top: 0; font-size: 0.78rem; border: 1px solid var(--border); border-radius: 4px; }
   .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-family: "IBM Plex Mono", ui-monospace, monospace; margin-top: 12px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--text-dim); }
   .status:empty { display: none; }
   .status.ok { background: var(--ok-bg); color: var(--ok); }
   .status.err { background: var(--err-bg); color: var(--err); }
   .status.pending { background: var(--pending-bg); color: var(--pending); }
+  .log { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px; margin-top: 10px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.76rem; white-space: pre-wrap; word-break: break-all; max-height: 160px; overflow-y: auto; color: var(--text-dim); }
 
-  .log { background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 11px 13px; margin-top: 10px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.76rem; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto; color: var(--text-dim); }
-
-  table.plans { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
-  table.plans th { text-align: left; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); padding: 0 10px 8px 0; border-bottom: 1px solid var(--border); font-weight: 500; }
-  table.plans td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
-  table.plans tr:last-child td { border-bottom: none; }
-  .empty-note { font-size: 0.84rem; color: var(--text-dim); padding: 6px 0; }
-
+  /* ── Dashboard shell ──────────────────────────────────────────────────── */
   #appPanels { display: none; }
-  dl.kv { margin: 10px 0 0; font-size: 0.84rem; }
-  dl.kv dt { color: var(--text-dim); font-size: 0.74rem; margin-top: 8px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
-  dl.kv dd { margin: 2px 0 0; font-family: "IBM Plex Mono", ui-monospace, monospace; word-break: break-all; }
+  .shell { max-width: 980px; margin: 0 auto; padding: 32px 28px 72px; }
+  .dash-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .dash-head h1 { font-size: 1.25rem; font-weight: 600; margin: 0 0 3px; }
+  .dash-head .who { font-size: 0.78rem; color: var(--text-dim); font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .tier-pill { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.72rem; padding: 3px 10px; border-radius: 999px; background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+  @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { background: var(--surface); padding: 16px 18px; }
+  .stat .label { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+  .stat .value { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.4rem; font-weight: 600; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .stat .sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+
+  .note { font-size: 0.78rem; color: var(--text-dim); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; margin-bottom: 20px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 22px 24px; margin-bottom: 20px; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .card h2 { font-size: 1rem; font-weight: 600; margin: 0; }
+  .card .card-note { font-size: 0.82rem; color: var(--text-dim); margin: 4px 0 16px; max-width: 65ch; }
+  .card-head button.ghost { margin-top: 0; }
+
+  table.data { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  table.data th { text-align: left; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.66rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); padding: 0 10px 8px 0; border-bottom: 1px solid var(--border); font-weight: 500; }
+  table.data td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; vertical-align: middle; }
+  table.data tr:last-child td { border-bottom: none; }
+  table.data .actions { display: flex; gap: 6px; }
+  .empty-note { font-size: 0.84rem; color: var(--text-dim); padding: 8px 0; }
+  .overflow { overflow-x: auto; }
+
+  .feed { display: flex; flex-direction: column; }
+  .feed-row { display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 0.83rem; align-items: baseline; }
+  .feed-row:first-child { border-top: none; }
+  .feed-row .kind { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.68rem; text-transform: uppercase; color: var(--text-dim); }
+  .feed-row .who { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--text-dim); }
+  .feed-row .amt { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  form.inline { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  form.inline > div { flex: 1; min-width: 140px; }
+  form.inline button { margin-top: 5px; white-space: nowrap; }
 </style>
 
 <nav class="top">
-  <div class="wordmark"><span class="bracket">[</span>OOTLE PRIVATE PAY<span class="bracket">]</span></div>
+  <div class="wordmark">Ootle Pay</div>
   <div class="links">
-    <a href="https://imphila.github.io/ootle-private-pay/index.html">Overview</a>
-    <a href="https://imphila.github.io/ootle-private-pay/merchant.html" class="active">Merchant Console</a>
-    <a href="https://imphila.github.io/ootle-private-pay/pay.html">Pay</a>
+    <a href="https://imphila.github.io/ootle-pay/index.html">Overview</a>
+    <a href="https://imphila.github.io/ootle-pay/merchant.html" class="active">Merchant Console</a>
+    <a href="https://imphila.github.io/ootle-pay/pay.html">Pay</a>
   </div>
   <div class="net"><span class="dot"></span> esme testnet</div>
 </nav>
 
-<div class="shell">
-  <h1 class="page">Merchant Console</h1>
-  <p class="page-note">Register your stake, publish subscription plans, and claim what your customers have paid.</p>
-
-  <div id="connectPanel" class="card">
-    <h2>Connect your wallet daemon</h2>
+<div id="connectPanel" class="landing">
+  <h1>Run your storefront.</h1>
+  <p class="dek">Stake to register, list products and subscription plans, and see every order
+    and dollar as it lands — sourced straight from the public esme ledger, not a database only
+    we can see.</p>
+  <div class="checklist">
+    <div><span class="num">01</span> Connect a Tari Ootle wallet daemon (local, holds your keys).</div>
+    <div><span class="num">02</span> Stake XTR to register as an accountable merchant.</div>
+    <div><span class="num">03</span> List products or subscription plans and start selling.</div>
+  </div>
+  <div class="connect-card">
     <label for="daemonUrl">Wallet daemon JSON-RPC URL</label>
     <input id="daemonUrl" value="http://127.0.0.1:5100/json_rpc" />
-    <button id="connectBtn">Connect</button>
+    <button id="connectBtn">Connect wallet</button>
     <div id="connectStatus" class="status"></div>
   </div>
+</div>
 
-  <div id="appPanels">
+<div id="appPanels">
+  <div class="shell">
+    <div class="dash-head">
+      <div>
+        <h1>Dashboard</h1>
+        <div class="who">Merchant <span id="accountPk" class="mono"></span></div>
+      </div>
+      <span class="tier-pill" id="tierPill">checking…</span>
+    </div>
+
     <div class="stats">
-      <div class="stat"><div class="label">Your tier</div><div class="value" id="statTier">—</div></div>
-      <div class="stat"><div class="label">Staked</div><div class="value" id="statStaked">—</div></div>
-      <div class="stat"><div class="label">Fee pot (private_pay)</div><div class="value" id="statFeePot">—</div></div>
-      <div class="stat"><div class="label">Treasury (registry)</div><div class="value" id="statTreasury">—</div></div>
+      <div class="stat"><div class="label">Revenue today</div><div class="value" id="statToday">—</div><div class="sub">observed this session onward</div></div>
+      <div class="stat"><div class="label">Revenue this month</div><div class="value" id="statMonth">—</div><div class="sub">observed this session onward</div></div>
+      <div class="stat"><div class="label">Revenue all-time</div><div class="value" id="statAllTime">—</div><div class="sub" id="statOrderCount">—</div></div>
+      <div class="stat"><div class="label">Wallet balance</div><div class="value" id="statBalance">—</div><div class="sub">your connected wallet</div></div>
+    </div>
+
+    <div class="note" id="backfillNote" style="display:none">
+      First time opening this dashboard: <span id="backfillCount">0</span> existing order(s)/renewal(s)
+      were counted into <b>all-time</b> revenue but not into today/this month, since there's no way to
+      know exactly when they happened — only that they already existed. Today/month tracking is exact
+      from here on.
     </div>
 
     <div class="card">
-      <h2>Register &amp; stake<span class="sub">One-time — stake more anytime with the same form to raise your tier (1× min = Basic, 5× = Standard, 20× = Premium).</span></h2>
-      <label for="stakeAmount">Amount (XTR)</label>
-      <input id="stakeAmount" value="1000" />
+      <div class="card-head"><h2>Register &amp; stake</h2></div>
+      <p class="card-note">Public and slashable — your tier (Basic / Standard / Premium) is a
+        multiple of the minimum stake, visible to anyone deciding whether to buy from you.</p>
+      <div class="row">
+        <div><label for="stakeAmount">Amount (XTR)</label><input id="stakeAmount" value="1000" /></div>
+      </div>
       <div class="row">
         <button id="registerBtn">Register</button>
         <button id="addStakeBtn" class="secondary">Add stake</button>
-        <button id="refreshStatsBtn" class="secondary">Refresh stats</button>
       </div>
       <div id="registerStatus" class="status"></div>
       <div id="registerLog" class="log" style="display:none"></div>
     </div>
 
     <div class="card">
-      <h2>Subscription plans<span class="sub">Create a plan once, then advance its billing period whenever your cycle rolls over — there's no on-chain clock, so this is on you (e.g. a monthly cron).</span></h2>
-      <label for="planPrice">Price per period (XTR)</label>
-      <input id="planPrice" value="50" />
-      <button id="createPlanBtn">Create plan</button>
-      <div id="createPlanStatus" class="status"></div>
+      <div class="card-head">
+        <h2>Products</h2>
+        <button class="ghost" id="refreshProductsBtn">Refresh</button>
+      </div>
+      <p class="card-note">One-off items at a fixed price. Every purchase is a public
+        <code>OrderPlaced</code> event, so order count and revenue below are read from the chain,
+        not typed in by hand.</p>
+      <form class="inline" id="createProductForm">
+        <div><label for="productName">Name (kept in your browser only — the chain only knows a product id and price)</label><input id="productName" placeholder="e.g. Consulting hour" /></div>
+        <div><label for="productPrice">Price (XTR)</label><input id="productPrice" value="20" /></div>
+        <button id="createProductBtn">Create product</button>
+      </form>
+      <div id="createProductStatus" class="status"></div>
+      <div class="overflow" style="margin-top:16px">
+        <table class="data" id="productsTable" style="display:none">
+          <tr><th>Product</th><th>Price</th><th>Orders</th><th>Revenue (all-time)</th><th>Claimable now</th><th></th></tr>
+        </table>
+      </div>
+      <div class="empty-note" id="productsEmpty">No products yet — create one above.</div>
+    </div>
 
-      <table class="plans" id="plansTable" style="margin-top:16px; display:none">
-        <tr><th>Plan</th><th>Price</th><th>Period</th><th>Revenue</th><th></th></tr>
-      </table>
+    <div class="card">
+      <div class="card-head">
+        <h2>Subscription plans</h2>
+        <button class="ghost" id="refreshPlansBtn">Refresh</button>
+      </div>
+      <p class="card-note">Recurring plans. There's no on-chain clock, so you advance the billing
+        period yourself once per cycle (e.g. a monthly cron) — <code>advance_period</code> below.</p>
+      <form class="inline" id="createPlanForm">
+        <div><label for="planName">Name (kept in your browser only)</label><input id="planName" placeholder="e.g. Pro monthly" /></div>
+        <div><label for="planPrice">Price per period (XTR)</label><input id="planPrice" value="50" /></div>
+        <button id="createPlanBtn">Create plan</button>
+      </form>
+      <div id="createPlanStatus" class="status"></div>
+      <div class="overflow" style="margin-top:16px">
+        <table class="data" id="plansTable" style="display:none">
+          <tr><th>Plan</th><th>Price/period</th><th>Period</th><th>Subscribers</th><th>Revenue (all-time)</th><th></th></tr>
+        </table>
+      </div>
       <div class="empty-note" id="plansEmpty">No plans yet — create one above.</div>
     </div>
 
     <div class="card">
-      <h2>Merchant identity</h2>
-      <dl class="kv">
-        <dt>Public key (share this with customers)</dt><dd id="accountPk"></dd>
-        <dt>Wallet balance</dt><dd id="walletBalance">—</dd>
-      </dl>
+      <div class="card-head">
+        <h2>Recent activity</h2>
+        <button class="ghost" id="refreshFeedBtn">Refresh</button>
+      </div>
+      <p class="card-note">Every order and renewal against your products/plans, newest first —
+        pulled live from the public indexer, so this is what anyone auditing you would see too.</p>
+      <div class="feed" id="activityFeed"></div>
+      <div class="empty-note" id="activityEmpty">No activity yet.</div>
     </div>
   </div>
 </div>
 
 <script>
   const REGISTRY = "component_1d32aca29e61e70736d16f3e2603dffb6eb7859cfda60ab09977da73711aa7ed";
-  const PRIVATE_PAY = "component_478fd847553b9e896324b641fa3f60200d2f37ae04699c3628f09062f2fdc623";
-  const SUBSCRIPTION = "component_9addab1f01ebf52a7bc95db6fe2b54a00878ce305c6d2c62761eac4f70c6c475";
-  const PLANS_KEY = "ootlePrivatePay.merchantPlans";
+  const STOREFRONT = "component_19ca26614a5e0641430c38fbafc9096274b2baac096814e8e7b376f7229b540f";
+  const SUBSCRIPTION = "component_61cbdff66b9eed52c66208a008b2e8453577c1d65243f71adff5ab3797185a84";
+  const INDEXER = "https://ootle-indexer-a.tari.com";
+  const CATALOG_KEY = "ootlePay.catalog";       // { products: {id: name}, plans: {id: name} }
+  const REVENUE_LOG_KEY = "ootlePay.revenueLog"; // { seen: {eventKey: observedAtMs|null} }
 
   let daemonUrl = "", authToken = "", accountAddress = "", accountPublicKey = "", rpcId = 1;
 
@@ -196,14 +271,18 @@
     if (body.error) throw new Error(body.error.message || JSON.stringify(body.error));
     return body.result;
   }
-
   async function submitManifestAndWait(manifest, variables) {
     const submitted = await rpc("transactions.submit_manifest", {
       manifest, variables, seal_signer_key_id: null, signing_key_ids: [], max_fee: 100000, dry_run: false, blobs: {},
     });
     return rpc("transactions.wait_result", { transaction_id: submitted.transaction_id, timeout_secs: 60 });
   }
-
+  async function dryRun(manifest, variables) {
+    const result = await rpc("transactions.submit_manifest", {
+      manifest, variables, seal_signer_key_id: null, signing_key_ids: [], max_fee: 100000, dry_run: true, blobs: {},
+    });
+    return result;
+  }
   function readScalar(result) {
     const finalize = result && result.result;
     if (!finalize || !finalize.execution_results.length) return null;
@@ -216,116 +295,24 @@
   }
   function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
   function showLog(el, text) { el.style.display = "block"; el.textContent = text; }
+  function short(pk) { return pk ? pk.slice(0, 8) + "…" + pk.slice(-6) : ""; }
 
-  function loadPlans() {
-    try { return JSON.parse(localStorage.getItem(PLANS_KEY) || "[]"); } catch { return []; }
-  }
-  function savePlans(plans) { localStorage.setItem(PLANS_KEY, JSON.stringify(plans)); }
+  function loadCatalog() { try { return JSON.parse(localStorage.getItem(CATALOG_KEY) || '{"products":{},"plans":{}}'); } catch { return { products: {}, plans: {} }; } }
+  function saveCatalog(c) { localStorage.setItem(CATALOG_KEY, JSON.stringify(c)); }
+  function loadRevenueLog() { try { return JSON.parse(localStorage.getItem(REVENUE_LOG_KEY) || '{"seen":{}}'); } catch { return { seen: {} }; } }
+  function saveRevenueLog(l) { localStorage.setItem(REVENUE_LOG_KEY, JSON.stringify(l)); }
 
-  async function refreshBalance() {
-    try {
-      const res = await rpc("accounts.get_balances", { account: accountAddress, refresh: true });
-      const xtr = res.balances.find((b) => b.token_symbol === "tTARI" || b.token_symbol === "XTR");
-      const badges = res.balances.filter((b) => b.resource_type === "NonFungible");
-      const el = document.getElementById("walletBalance");
-      if (!el) return;
-      const amount = xtr ? (Number(xtr.balance) / 10 ** xtr.divisibility).toFixed(xtr.divisibility) : "0";
-      const badgeNote = badges.length ? ` · ${badges.map((b) => b.token_symbol).join(", ")}` : "";
-      el.textContent = `${amount} ${xtr ? xtr.token_symbol : "XTR"}${badgeNote}`;
-    } catch (err) {
-      const el = document.getElementById("walletBalance");
-      if (el) el.textContent = "unavailable (" + err.message + ")";
-    }
+  // ── Indexer event log (public, no auth, CORS-open: reads what ANY wallet did against our components) ──
+  async function fetchEvents(substateId) {
+    const res = await fetch(`${INDEXER}/transactions/events?substate_id=${substateId}&limit=500`);
+    const body = await res.json();
+    return (body.events || []).map(([txId, e]) => ({ txId, ...e }));
   }
 
-  async function refreshStats() {
-    try {
-      const tierRaw = await submitManifestAndWait(
-        `fn main() {\n    let registry = var!["registry"];\n    registry.get_tier(PublicKey("${accountPublicKey}"));\n}`,
-        { registry: REGISTRY }
-      );
-      const tier = readScalar(tierRaw);
-      const tierEl = document.getElementById("statTier");
-      tierEl.textContent = tier || "unregistered";
-      tierEl.className = "value" + (tier ? " tier-" + tier : "");
+  function isSameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+  function isSameMonth(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth(); }
 
-      const infoRaw = await submitManifestAndWait(
-        `fn main() {\n    let registry = var!["registry"];\n    registry.get_merchant_info(PublicKey("${accountPublicKey}"));\n}`,
-        { registry: REGISTRY }
-      );
-      const info = readScalar(infoRaw);
-      document.getElementById("statStaked").textContent = info ? info[0] + " XTR" : "—";
-    } catch {
-      document.getElementById("statTier").textContent = "unregistered";
-    }
-
-    try {
-      const feeRaw = await submitManifestAndWait(`fn main() {\n    let pay = var!["pay"];\n    pay.fee_pot_balance();\n}`, { pay: PRIVATE_PAY });
-      document.getElementById("statFeePot").textContent = readScalar(feeRaw) + " XTR";
-    } catch {}
-    try {
-      const treasuryRaw = await submitManifestAndWait(`fn main() {\n    let registry = var!["registry"];\n    registry.treasury_balance();\n}`, { registry: REGISTRY });
-      document.getElementById("statTreasury").textContent = readScalar(treasuryRaw) + " XTR";
-    } catch {}
-  }
-
-  async function refreshPlanRevenue(plan) {
-    try {
-      const raw = await submitManifestAndWait(
-        `fn main() {\n    let subs = var!["subs"];\n    subs.is_active(${plan.id}u32, "__revenue_probe__");\n}`,
-        { subs: SUBSCRIPTION }
-      );
-      return null; // is_active doesn't expose revenue; kept for future use.
-    } catch { return null; }
-  }
-
-  function renderPlans() {
-    const plans = loadPlans();
-    const table = document.getElementById("plansTable");
-    const empty = document.getElementById("plansEmpty");
-    if (plans.length === 0) { table.style.display = "none"; empty.style.display = "block"; return; }
-    empty.style.display = "none";
-    table.style.display = "table";
-    table.querySelectorAll("tr:not(:first-child)").forEach((r) => r.remove());
-    plans.forEach((plan) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>#${plan.id}</td><td>${plan.price} XTR</td><td id="period-${plan.id}">…</td><td><button class="ghost" data-claim="${plan.id}">Claim</button></td><td><button class="ghost" data-advance="${plan.id}">Advance period</button></td>`;
-      table.appendChild(tr);
-    });
-    table.querySelectorAll("[data-advance]").forEach((btn) => btn.addEventListener("click", () => advancePeriod(Number(btn.dataset.advance))));
-    table.querySelectorAll("[data-claim]").forEach((btn) => btn.addEventListener("click", () => claimRevenue(Number(btn.dataset.claim))));
-    plans.forEach(loadPeriod);
-  }
-
-  async function loadPeriod(plan) {
-    try {
-      // create_plan's return + is_active don't expose current_period directly from the client
-      // side without an extra read method, so we surface it via the last advance/create event instead.
-      const cell = document.getElementById(`period-${plan.id}`);
-      if (cell) cell.textContent = plan.lastKnownPeriod ?? "0";
-    } catch {}
-  }
-
-  async function advancePeriod(planId) {
-    const result = await submitManifestAndWait(`fn main() {\n    let subs = var!["subs"];\n    subs.advance_period(${planId}u32);\n}`, { subs: SUBSCRIPTION });
-    const summary = eventsSummary(result);
-    const plans = loadPlans();
-    const plan = plans.find((p) => p.id === planId);
-    const match = summary.match(/"period":"(\d+)"/);
-    if (plan && match) { plan.lastKnownPeriod = match[1]; savePlans(plans); }
-    renderPlans();
-  }
-
-  async function claimRevenue(planId) {
-    const account = accountAddress;
-    const result = await submitManifestAndWait(
-      `fn main() {\n    let subs = var!["subs"];\n    let account = var!["account"];\n    let revenue = subs.claim_plan_revenue(${planId}u32);\n    account.deposit(revenue);\n}`,
-      { subs: SUBSCRIPTION, account }
-    );
-    alert(eventsSummary(result) || "Claimed (no events returned).");
-    refreshBalance();
-  }
-
+  // ── Connect ──────────────────────────────────────────────────────────────
   document.getElementById("connectBtn").addEventListener("click", async () => {
     const btn = document.getElementById("connectBtn");
     const statusEl = document.getElementById("connectStatus");
@@ -342,20 +329,38 @@
       const account = entry.account ?? entry;
       accountAddress = account.component_address;
       accountPublicKey = account.owner_public_key;
-      document.getElementById("accountPk").textContent = accountPublicKey;
+      document.getElementById("accountPk").textContent = short(accountPublicKey);
+
       document.getElementById("connectPanel").style.display = "none";
       document.getElementById("appPanels").style.display = "block";
-      renderPlans();
-      refreshStats();
-      refreshBalance();
+
+      await refreshBalance();
+      await refreshMerchantStatus();
+      await refreshDashboard();
     } catch (err) {
       setStatus(statusEl, "Failed: " + err.message, "err");
       btn.disabled = false;
     }
   });
 
-  document.getElementById("refreshStatsBtn").addEventListener("click", () => { refreshStats(); refreshBalance(); });
+  async function refreshBalance() {
+    try {
+      const res = await rpc("accounts.get_balances", { account: accountAddress, refresh: true });
+      const xtr = res.balances.find((b) => b.token_symbol === "tTARI" || b.token_symbol === "XTR");
+      document.getElementById("statBalance").textContent = xtr ? (Number(xtr.balance) / 10 ** xtr.divisibility).toFixed(2) + " " + xtr.token_symbol : "0";
+    } catch { document.getElementById("statBalance").textContent = "—"; }
+  }
 
+  async function refreshMerchantStatus() {
+    const pill = document.getElementById("tierPill");
+    try {
+      const tierRaw = await dryRun(`fn main() {\n    let registry = var!["registry"];\n    registry.get_tier(PublicKey("${accountPublicKey}"));\n}`, { registry: REGISTRY });
+      const tier = readScalar(tierRaw);
+      pill.textContent = tier ? `${tier} tier` : "not registered";
+    } catch { pill.textContent = "not registered"; }
+  }
+
+  // ── Register / stake ────────────────────────────────────────────────────
   document.getElementById("registerBtn").addEventListener("click", async () => {
     const statusEl = document.getElementById("registerStatus");
     const logEl = document.getElementById("registerLog");
@@ -369,8 +374,7 @@
       const summary = eventsSummary(result);
       showLog(logEl, summary);
       setStatus(statusEl, summary.includes("MerchantRegistered") ? "Registered." : "Submitted — check log.", summary.includes("MerchantRegistered") ? "ok" : "pending");
-      refreshStats();
-      refreshBalance();
+      refreshMerchantStatus(); refreshBalance();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   });
 
@@ -386,13 +390,37 @@
       );
       showLog(logEl, eventsSummary(result));
       setStatus(statusEl, "Stake added.", "ok");
-      refreshStats();
-      refreshBalance();
+      refreshMerchantStatus(); refreshBalance();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   });
 
-  document.getElementById("createPlanBtn").addEventListener("click", async () => {
+  // ── Create product ──────────────────────────────────────────────────────
+  document.getElementById("createProductBtn").addEventListener("click", async (ev) => {
+    ev.preventDefault();
+    const statusEl = document.getElementById("createProductStatus");
+    const name = document.getElementById("productName").value.trim() || "Untitled product";
+    const price = document.getElementById("productPrice").value.trim();
+    setStatus(statusEl, "Creating product…", "pending");
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let store = var!["store"];\n    store.create_product(PublicKey("${accountPublicKey}"), ${price}u64, XTR);\n}`,
+        { store: STOREFRONT }
+      );
+      const productId = readScalar(result);
+      const catalog = loadCatalog();
+      catalog.products[productId] = name;
+      saveCatalog(catalog);
+      setStatus(statusEl, `Product #${productId} "${name}" created.`, "ok");
+      document.getElementById("productName").value = "";
+      refreshDashboard();
+    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+  });
+
+  // ── Create plan ──────────────────────────────────────────────────────────
+  document.getElementById("createPlanBtn").addEventListener("click", async (ev) => {
+    ev.preventDefault();
     const statusEl = document.getElementById("createPlanStatus");
+    const name = document.getElementById("planName").value.trim() || "Untitled plan";
     const price = document.getElementById("planPrice").value.trim();
     setStatus(statusEl, "Creating plan…", "pending");
     try {
@@ -401,11 +429,161 @@
         { subs: SUBSCRIPTION }
       );
       const planId = readScalar(result);
-      const plans = loadPlans();
-      plans.push({ id: planId, price, lastKnownPeriod: "0" });
-      savePlans(plans);
-      renderPlans();
-      setStatus(statusEl, `Plan #${planId} created — share this id with customers.`, "ok");
+      const catalog = loadCatalog();
+      catalog.plans[planId] = name;
+      saveCatalog(catalog);
+      setStatus(statusEl, `Plan #${planId} "${name}" created.`, "ok");
+      document.getElementById("planName").value = "";
+      refreshDashboard();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   });
+
+  async function claimProductRevenue(productId) {
+    const result = await submitManifestAndWait(
+      `fn main() {\n    let store = var!["store"];\n    let account = var!["account"];\n    let revenue = store.claim_revenue(${productId}u32);\n    account.deposit(revenue);\n}`,
+      { store: STOREFRONT, account: accountAddress }
+    );
+    alert(eventsSummary(result) || "Claimed.");
+    refreshBalance(); refreshDashboard();
+  }
+  async function claimPlanRevenue(planId) {
+    const result = await submitManifestAndWait(
+      `fn main() {\n    let subs = var!["subs"];\n    let account = var!["account"];\n    let revenue = subs.claim_plan_revenue(${planId}u32);\n    account.deposit(revenue);\n}`,
+      { subs: SUBSCRIPTION, account: accountAddress }
+    );
+    alert(eventsSummary(result) || "Claimed.");
+    refreshBalance(); refreshDashboard();
+  }
+  async function advancePeriod(planId) {
+    const result = await submitManifestAndWait(`fn main() {\n    let subs = var!["subs"];\n    subs.advance_period(${planId}u32);\n}`, { subs: SUBSCRIPTION });
+    alert(eventsSummary(result) || "Advanced.");
+    refreshDashboard();
+  }
+
+  // ── Dashboard: pull the full event history for our two components from the
+  //    public indexer, filter to events belonging to this merchant, and derive
+  //    products/plans/orders/revenue from it (not from anything typed by hand). ──
+  async function refreshDashboard() {
+    const [storeEvents, subEvents] = await Promise.all([fetchEvents(STOREFRONT), fetchEvents(SUBSCRIPTION)]);
+    const catalog = loadCatalog();
+
+    const myProductsCreated = storeEvents.filter((e) => e.topic === "PrivatePay.ProductCreated" && e.payload.merchant === accountPublicKey);
+    const myOrders = storeEvents.filter((e) => e.topic === "PrivatePay.OrderPlaced" && e.payload.merchant === accountPublicKey);
+    const myPlansCreated = subEvents.filter((e) => e.topic === "SubscriptionManager.PlanCreated" && e.payload.merchant === accountPublicKey);
+    const myPlanIds = new Set(myPlansCreated.map((e) => e.payload.plan_id));
+    const myRenewals = subEvents.filter((e) => e.topic === "SubscriptionManager.SubscriptionRenewed" && myPlanIds.has(e.payload.plan_id));
+
+    // ── Revenue log: classify each order/renewal as "seen before" (backfill, all-time only)
+    //    or "new" (stamp with real observation time, counts toward today/month too). ──
+    const log = loadRevenueLog();
+    const isFirstEverLoad = Object.keys(log.seen).length === 0 && (myOrders.length > 0 || myRenewals.length > 0);
+    const now = new Date();
+    let newlySeen = 0;
+    const dated = [];
+    for (const o of myOrders) {
+      const key = `order:${o.txId}:${o.payload.order_number}`;
+      if (!(key in log.seen)) { log.seen[key] = now.getTime(); newlySeen++; }
+      dated.push({ kind: "order", when: log.seen[key], amount: Number(o.payload.amount), productId: o.payload.product_id, who: o.payload.buyer });
+    }
+    for (const r of myRenewals) {
+      const key = `renew:${r.txId}`;
+      if (!(key in log.seen)) { log.seen[key] = now.getTime(); newlySeen++; }
+      const plan = myPlansCreated.find((p) => p.payload.plan_id === r.payload.plan_id);
+      dated.push({ kind: "subscription", when: log.seen[key], amount: plan ? Number(plan.payload.price) : null, planId: r.payload.plan_id, who: r.payload.subscriber });
+    }
+    saveRevenueLog(log);
+    if (isFirstEverLoad) {
+      document.getElementById("backfillNote").style.display = "block";
+      document.getElementById("backfillCount").textContent = String(newlySeen);
+    }
+
+    // ── Revenue stat tiles ──
+    let today = 0, month = 0, allTime = 0;
+    for (const d of dated) {
+      if (d.amount == null) continue;
+      allTime += d.amount;
+      const seenAt = new Date(d.when);
+      if (isSameDay(seenAt, now)) today += d.amount;
+      if (isSameMonth(seenAt, now)) month += d.amount;
+    }
+    document.getElementById("statToday").textContent = today.toFixed(0) + " XTR";
+    document.getElementById("statMonth").textContent = month.toFixed(0) + " XTR";
+    document.getElementById("statAllTime").textContent = allTime.toFixed(0) + " XTR";
+    document.getElementById("statOrderCount").textContent = `${myOrders.length} order(s), ${myRenewals.length} renewal(s)`;
+
+    // ── Products table ──
+    const productIds = [...new Set(myProductsCreated.map((e) => e.payload.product_id))];
+    const productsTable = document.getElementById("productsTable");
+    const productsEmpty = document.getElementById("productsEmpty");
+    if (productIds.length === 0) { productsTable.style.display = "none"; productsEmpty.style.display = "block"; }
+    else {
+      productsEmpty.style.display = "none"; productsTable.style.display = "table";
+      productsTable.querySelectorAll("tr:not(:first-child)").forEach((r) => r.remove());
+      for (const id of productIds) {
+        const created = myProductsCreated.find((e) => e.payload.product_id === id);
+        const orders = myOrders.filter((e) => e.payload.product_id === id);
+        const revenue = orders.reduce((sum, o) => sum + Number(o.payload.amount), 0);
+        let claimable = "…";
+        try {
+          const infoRaw = await dryRun(`fn main() {\n    let store = var!["store"];\n    store.get_product_info(${id}u32);\n}`, { store: STOREFRONT });
+          const info = readScalar(infoRaw);
+          claimable = info ? info[2] : "?";
+        } catch { claimable = "?"; }
+        const name = catalog.products[id] || `Product #${id}`;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${name}</td><td>${created.payload.price} XTR</td><td>${orders.length}</td><td>${revenue} XTR</td><td>${claimable} XTR</td><td class="actions"><button class="ghost" data-claim-product="${id}">Claim</button></td>`;
+        productsTable.appendChild(tr);
+      }
+      productsTable.querySelectorAll("[data-claim-product]").forEach((btn) => btn.addEventListener("click", () => claimProductRevenue(Number(btn.dataset.claimProduct))));
+    }
+
+    // ── Plans table ──
+    const planIds = [...myPlanIds];
+    const plansTable = document.getElementById("plansTable");
+    const plansEmpty = document.getElementById("plansEmpty");
+    if (planIds.length === 0) { plansTable.style.display = "none"; plansEmpty.style.display = "block"; }
+    else {
+      plansEmpty.style.display = "none"; plansTable.style.display = "table";
+      plansTable.querySelectorAll("tr:not(:first-child)").forEach((r) => r.remove());
+      for (const id of planIds) {
+        const created = myPlansCreated.find((e) => e.payload.plan_id === id);
+        const renewals = myRenewals.filter((e) => e.payload.plan_id === id);
+        const subscribers = new Set(renewals.map((e) => e.payload.subscriber)).size;
+        const revenue = renewals.length * Number(created.payload.price);
+        const currentPeriod = renewals.length ? Math.max(...renewals.map((e) => Number(e.payload.paid_until_period))) - 1 : 0;
+        const name = catalog.plans[id] || `Plan #${id}`;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${name}</td><td>${created.payload.price} XTR</td><td>${currentPeriod}</td><td>${subscribers}</td><td>${revenue} XTR</td><td class="actions"><button class="ghost" data-advance-plan="${id}">Advance period</button> <button class="ghost" data-claim-plan="${id}">Claim</button></td>`;
+        plansTable.appendChild(tr);
+      }
+      plansTable.querySelectorAll("[data-advance-plan]").forEach((btn) => btn.addEventListener("click", () => advancePeriod(Number(btn.dataset.advancePlan))));
+      plansTable.querySelectorAll("[data-claim-plan]").forEach((btn) => btn.addEventListener("click", () => claimPlanRevenue(Number(btn.dataset.claimPlan))));
+    }
+
+    // ── Activity feed ──
+    const feed = document.getElementById("activityFeed");
+    const feedEmpty = document.getElementById("activityEmpty");
+    const combined = [
+      ...myOrders.map((o) => ({ kind: "Order", label: catalog.products[o.payload.product_id] || `Product #${o.payload.product_id}`, who: o.payload.buyer, amount: o.payload.amount })),
+      ...myRenewals.map((r) => {
+        const plan = myPlansCreated.find((p) => p.payload.plan_id === r.payload.plan_id);
+        return { kind: "Renewal", label: catalog.plans[r.payload.plan_id] || `Plan #${r.payload.plan_id}`, who: r.payload.subscriber, amount: plan ? plan.payload.price : "?" };
+      }),
+    ].reverse();
+    feed.innerHTML = "";
+    if (combined.length === 0) { feedEmpty.style.display = "block"; }
+    else {
+      feedEmpty.style.display = "none";
+      for (const item of combined.slice(0, 30)) {
+        const row = document.createElement("div");
+        row.className = "feed-row";
+        row.innerHTML = `<span class="kind">${item.kind}</span><span>${item.label} <span class="who">· ${short(item.who)}</span></span><span class="amt">${item.amount} XTR</span>`;
+        feed.appendChild(row);
+      }
+    }
+  }
+
+  document.getElementById("refreshProductsBtn").addEventListener("click", refreshDashboard);
+  document.getElementById("refreshPlansBtn").addEventListener("click", refreshDashboard);
+  document.getElementById("refreshFeedBtn").addEventListener("click", refreshDashboard);
 </script>
