@@ -194,6 +194,21 @@
     if (!finalize) return "(no result yet — status: " + (result ? result.status : "?") + ")";
     return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
   }
+  // Extracts the contract's own panic/reject message so a failed call shows a real reason
+  // instead of a vague "submitted, check the log" - null means the transaction fully succeeded.
+  function extractFailureReason(result) {
+    if (!result || result.status === "Accepted") return null;
+    const outcome = result.result && result.result.result;
+    if (outcome) {
+      if (outcome.AcceptFeeRejectRest) {
+        const info = outcome.AcceptFeeRejectRest[1];
+        if (info && info.ExecutionFailure) return info.ExecutionFailure.replace(/^At instruction #\d+: /, "");
+        if (info) return JSON.stringify(info);
+      }
+      if (outcome.Reject) return typeof outcome.Reject === "string" ? outcome.Reject : JSON.stringify(outcome.Reject);
+    }
+    return `Transaction ${(result.status || "failed").replace(/([A-Z])/g, " $1").trim().toLowerCase()}`;
+  }
   function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
   function showLog(el, text) { el.style.display = "block"; el.textContent = text; }
 
@@ -266,9 +281,9 @@
         `fn main() {\n    let store = var!["store"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${price}u64);\n    store.buy(${productId}u32, payment);\n}`,
         { store: STOREFRONT, account: accountAddress }
       );
-      const summary = eventsSummary(result);
-      showLog(logEl, summary);
-      setStatus(statusEl, summary.includes("OrderPlaced") ? "Order placed!" : "Rejected — see log.", summary.includes("OrderPlaced") ? "ok" : "err");
+      showLog(logEl, eventsSummary(result));
+      const failure = extractFailureReason(result);
+      setStatus(statusEl, failure ? "Rejected: " + failure : "Order placed!", failure ? "err" : "ok");
       refreshBalance();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   });
@@ -286,7 +301,8 @@
         { subs: SUBSCRIPTION, account: accountAddress }
       );
       showLog(logEl, eventsSummary(result));
-      setStatus(statusEl, "Done.", "ok");
+      const failure = extractFailureReason(result);
+      setStatus(statusEl, failure ? "Rejected: " + failure : "Done.", failure ? "err" : "ok");
       refreshBalance();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   }

@@ -222,6 +222,21 @@
     if (!finalize) return "(no result yet — status: " + (result ? result.status : "?") + ")";
     return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
   }
+  // Extracts the contract's own panic/reject message so a failed call shows a real reason
+  // instead of a vague "submitted, check the log" - null means the transaction fully succeeded.
+  function extractFailureReason(result) {
+    if (!result || result.status === "Accepted") return null;
+    const outcome = result.result && result.result.result;
+    if (outcome) {
+      if (outcome.AcceptFeeRejectRest) {
+        const info = outcome.AcceptFeeRejectRest[1];
+        if (info && info.ExecutionFailure) return info.ExecutionFailure.replace(/^At instruction #\d+: /, "");
+        if (info) return JSON.stringify(info);
+      }
+      if (outcome.Reject) return typeof outcome.Reject === "string" ? outcome.Reject : JSON.stringify(outcome.Reject);
+    }
+    return `Transaction ${(result.status || "failed").replace(/([A-Z])/g, " $1").trim().toLowerCase()}`;
+  }
   function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
   function short(pk) { return pk ? pk.slice(0, 10) + "…" + pk.slice(-8) : ""; }
 
@@ -323,7 +338,8 @@
         `fn main() {\n    let registry = var!["registry"];\n    registry.slash(PublicKey("${pk}"), ${amount}u64);\n}`,
         { registry: REGISTRY }
       );
-      alert(eventsSummary(result) || "Slashed.");
+      const failure = extractFailureReason(result);
+      alert(failure ? "Rejected: " + failure : (eventsSummary(result) || "Slashed."));
       refreshAll();
     } catch (err) { alert("Failed: " + err.message); }
   }
@@ -334,7 +350,8 @@
         `fn main() {\n    let registry = var!["registry"];\n    let merchant_account = var!["merchant_account"];\n    let refund = registry.finalize_exit(PublicKey("${pk}"));\n    merchant_account.deposit(refund);\n}`,
         { registry: REGISTRY, merchant_account: merchantAccount }
       );
-      alert(eventsSummary(result) || "Finalized.");
+      const failure = extractFailureReason(result);
+      alert(failure ? "Rejected: " + failure : (eventsSummary(result) || "Finalized."));
       refreshAll();
     } catch (err) { alert("Failed: " + err.message); }
   }
@@ -347,7 +364,8 @@
         `fn main() {\n    let registry = var!["registry"];\n    let account = var!["account"];\n    let treasury = registry.withdraw_treasury();\n    account.deposit(treasury);\n}`,
         { registry: REGISTRY, account: accountAddress }
       );
-      setStatus(statusEl, "Withdrawn to your connected account.", "ok");
+      const failure = extractFailureReason(result);
+      setStatus(statusEl, failure ? "Rejected: " + failure : "Withdrawn to your connected account.", failure ? "err" : "ok");
       refreshAll();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   });
