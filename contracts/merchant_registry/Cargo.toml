@@ -1,0 +1,11 @@
+[workspace]
+[package]
+name = "merchant_registry"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tari_template_lib = { git = "https://github.com/tari-project/tari-ootle.git", rev = "9e1a82a7a6438ddea687ec9af1ec565642e0f168" }
+
+[lib]
+crate-type = ["cdylib"]

@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ootle Private Pay</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 780px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.5;
+    }
+    h1 { margin-bottom: 4px; }
+    .sub { color: #888; margin-top: 0; }
+    fieldset {
+      border: 1px solid #8884;
+      border-radius: 10px;
+      padding: 16px 20px 20px;
+      margin: 20px 0;
+    }
+    legend { font-weight: 600; padding: 0 6px; }
+    label { display: block; margin-top: 10px; font-size: 0.9em; opacity: 0.8; }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      margin-top: 4px;
+      border-radius: 6px;
+      border: 1px solid #8886;
+      font-family: inherit;
+      font-size: 0.95em;
+    }
+    button {
+      margin-top: 14px;
+      padding: 9px 18px;
+      border-radius: 6px;
+      border: none;
+      background: #7c3aed;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95em;
+    }
+    button:disabled { opacity: 0.5; cursor: default; }
+    button:hover:not(:disabled) { background: #6d28d9; }
+    .log {
+      background: #8881;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 12px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.82em;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .status { font-size: 0.85em; margin-top: 8px; }
+    .status.ok { color: #16a34a; }
+    .status.err { color: #dc2626; }
+    .status.pending { color: #d97706; }
+    .addr { font-family: ui-monospace, monospace; font-size: 0.8em; opacity: 0.7; word-break: break-all; }
+    #connectPanel { display: block; }
+    #appPanels { display: none; }
+  </style>
+</head>
+<body>
+  <h1>🔒 Ootle Private Pay</h1>
+  <p class="sub">Decentralized, stake-gated, anonymous third-party payments — live on the Tari Ootle <b>esme</b> testnet.</p>
+
+  <div id="connectPanel">
+    <fieldset>
+      <legend>1. Connect your wallet daemon</legend>
+      <label for="daemonUrl">Wallet daemon JSON-RPC URL</label>
+      <input id="daemonUrl" value="http://127.0.0.1:5100/json_rpc" />
+      <button id="connectBtn">Connect</button>
+      <div id="connectStatus" class="status"></div>
+    </fieldset>
+  </div>
+
+  <div id="appPanels">
+    <fieldset>
+      <legend>Wallet</legend>
+      <div>Account: <span id="accountAddr" class="addr"></span></div>
+      <div>Public key: <span id="accountPk" class="addr"></span></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>2. Become a merchant (stake to register)</legend>
+      <label for="stakeAmount">Stake amount (XTR)</label>
+      <input id="stakeAmount" value="1000" />
+      <button id="registerBtn">Stake &amp; Register</button>
+      <div id="registerStatus" class="status"></div>
+      <div id="registerLog" class="log" style="display:none"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>3. Pay a merchant anonymously</legend>
+      <p style="font-size:0.85em; opacity:0.75; margin-top:-6px">
+        Amount + recipient stay hidden — only the platform fee (priced by the merchant's tier) is ever recorded on-chain.
+      </p>
+      <label for="payMerchant">Merchant public key (hex)</label>
+      <input id="payMerchant" placeholder="paste a registered merchant's public key" />
+      <label for="payFee">Platform fee (XTR, min 3 for Basic tier)</label>
+      <input id="payFee" value="3" />
+      <button id="payBtn">Send Payment</button>
+      <div id="payStatus" class="status"></div>
+      <div id="payLog" class="log" style="display:none"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>4. Subscriptions</legend>
+      <label for="subMerchant">Merchant public key (hex)</label>
+      <input id="subMerchant" placeholder="paste a registered merchant's public key" />
+      <label for="subPrice">Plan price (XTR)</label>
+      <input id="subPrice" value="50" />
+      <label for="subPlanId">Plan id</label>
+      <input id="subPlanId" value="0" />
+      <button id="createPlanBtn">Create Plan</button>
+      <div id="createPlanStatus" class="status"></div>
+
+      <label for="subSecret">Your subscriber secret (keep this private!)</label>
+      <input id="subSecret" placeholder="a random string only you know" />
+      <button id="subscribeBtn">Subscribe</button>
+      <div id="subscribeStatus" class="status"></div>
+
+      <button id="checkActiveBtn">Check is_active</button>
+      <div id="activeStatus" class="status"></div>
+      <div id="subLog" class="log" style="display:none"></div>
+    </fieldset>
+  </div>
+
+  <script>
+    // ── Deployed component addresses on the esme testnet ─────────────────────
+    const REGISTRY = "component_1d32aca29e61e70736d16f3e2603dffb6eb7859cfda60ab09977da73711aa7ed";
+    const PRIVATE_PAY = "component_478fd847553b9e896324b641fa3f60200d2f37ae04699c3628f09062f2fdc623";
+    const SUBSCRIPTION = "component_9addab1f01ebf52a7bc95db6fe2b54a00878ce305c6d2c62761eac4f70c6c475";
+
+    let daemonUrl = "";
+    let authToken = "";
+    let accountAddress = "";
+    let accountPublicKey = "";
+    let rpcId = 1;
+
+    async function rpc(method, params) {
+      const res = await fetch(daemonUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: "Bearer " + authToken } : {}),
+        },
+        body: JSON.stringify({ jsonrpc: "2.0", id: rpcId++, method, params }),
+      });
+      const body = await res.json();
+      if (body.error) throw new Error(body.error.message || JSON.stringify(body.error));
+      return body.result;
+    }
+
+    async function submitManifestAndWait(manifest, variables, log) {
+      const submitted = await rpc("transactions.submit_manifest", {
+        manifest,
+        variables,
+        seal_signer_key_id: null,
+        signing_key_ids: [],
+        max_fee: 100000,
+        dry_run: false,
+        blobs: {},
+      });
+      if (log) log(`submitted tx ${submitted.transaction_id}, waiting for result…`);
+      const result = await rpc("transactions.wait_result", {
+        transaction_id: submitted.transaction_id,
+        timeout_secs: 60,
+      });
+      return result;
+    }
+
+    function eventsSummary(result) {
+      const finalize = result && result.result;
+      if (!finalize) return "(no result yet — status: " + (result ? result.status : "?") + ")";
+      return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
+    }
+
+    function setStatus(el, text, kind) {
+      el.textContent = text;
+      el.className = "status" + (kind ? " " + kind : "");
+    }
+
+    function showLog(el, text) {
+      el.style.display = "block";
+      el.textContent = text;
+    }
+
+    // ── Connect ────────────────────────────────────────────────────────────────
+    document.getElementById("connectBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("connectBtn");
+      const statusEl = document.getElementById("connectStatus");
+      btn.disabled = true;
+      setStatus(statusEl, "Connecting…", "pending");
+      try {
+        daemonUrl = document.getElementById("daemonUrl").value.trim();
+
+        // Mint a session token. This demo requests broad permissions for
+        // simplicity — a production app would request only the specific
+        // Accounts/Transactions/Templates grants it needs.
+        const auth = await rpc("auth.request", {
+          permissions: ["Admin"],
+          credentials: "None",
+        });
+        authToken = auth.token;
+
+        let accounts = await rpc("accounts.list", { offset: 0, limit: 1 });
+        let account;
+        if (accounts.accounts.length === 0) {
+          const created = await rpc("accounts.create", {});
+          account = created.account;
+        } else {
+          account = accounts.accounts[0];
+        }
+        accountAddress = account.component_address;
+        accountPublicKey = account.owner_public_key;
+
+        document.getElementById("accountAddr").textContent = accountAddress;
+        document.getElementById("accountPk").textContent = accountPublicKey;
+        document.getElementById("payMerchant").value = accountPublicKey;
+        document.getElementById("subMerchant").value = accountPublicKey;
+
+        document.getElementById("connectPanel").style.display = "none";
+        document.getElementById("appPanels").style.display = "block";
+      } catch (err) {
+        setStatus(statusEl, "Failed: " + err.message, "err");
+        btn.disabled = false;
+      }
+    });
+
+    // ── Register merchant ────────────────────────────────────────────────────
+    document.getElementById("registerBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("registerBtn");
+      const statusEl = document.getElementById("registerStatus");
+      const logEl = document.getElementById("registerLog");
+      const stake = document.getElementById("stakeAmount").value.trim();
+      btn.disabled = true;
+      setStatus(statusEl, "Staking & registering…", "pending");
+      try {
+        const manifest = `
+fn main() {
+    let registry = var!["registry"];
+    let account = var!["account"];
+    let stake = account.withdraw(XTR, ${stake}u64);
+    let badge = registry.register(stake);
+    account.deposit(badge);
+}`;
+        const result = await submitManifestAndWait(manifest, { registry: REGISTRY, account: accountAddress });
+        const summary = eventsSummary(result);
+        showLog(logEl, summary);
+        if (summary.includes("MerchantRegistered")) {
+          setStatus(statusEl, "Registered! You are now a merchant.", "ok");
+        } else if (result.status === "Rejected" || summary.toLowerCase().includes("reject")) {
+          setStatus(statusEl, "Rejected — see log below.", "err");
+        } else {
+          setStatus(statusEl, "Submitted — status: " + result.status, "pending");
+        }
+      } catch (err) {
+        setStatus(statusEl, "Failed: " + err.message, "err");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ── Pay ───────────────────────────────────────────────────────────────────
+    document.getElementById("payBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("payBtn");
+      const statusEl = document.getElementById("payStatus");
+      const logEl = document.getElementById("payLog");
+      const merchant = document.getElementById("payMerchant").value.trim();
+      const fee = document.getElementById("payFee").value.trim();
+      btn.disabled = true;
+      setStatus(statusEl, "Sending anonymous payment…", "pending");
+      try {
+        const manifest = `
+fn main() {
+    let pay = var!["pay"];
+    let account = var!["account"];
+    let fee = account.withdraw(XTR, ${fee}u64);
+    pay.pay(fee, PublicKey("${merchant}"));
+}`;
+        const result = await submitManifestAndWait(manifest, { pay: PRIVATE_PAY, account: accountAddress });
+        const summary = eventsSummary(result);
+        showLog(logEl, summary);
+        if (summary.includes("PaymentProcessed")) {
+          setStatus(statusEl, "Payment sent — only the fee is ever recorded.", "ok");
+        } else {
+          setStatus(statusEl, "Rejected — see log below.", "err");
+        }
+      } catch (err) {
+        setStatus(statusEl, "Failed: " + err.message, "err");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ── Subscriptions ─────────────────────────────────────────────────────────
+    document.getElementById("createPlanBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("createPlanBtn");
+      const statusEl = document.getElementById("createPlanStatus");
+      const logEl = document.getElementById("subLog");
+      const merchant = document.getElementById("subMerchant").value.trim();
+      const price = document.getElementById("subPrice").value.trim();
+      btn.disabled = true;
+      setStatus(statusEl, "Creating plan…", "pending");
+      try {
+        const manifest = `
+fn main() {
+    let subs = var!["subs"];
+    subs.create_plan(PublicKey("${merchant}"), ${price}u64, XTR);
+}`;
+        const result = await submitManifestAndWait(manifest, { subs: SUBSCRIPTION });
+        showLog(logEl, eventsSummary(result));
+        setStatus(statusEl, "Plan created (see plan id in log; defaults to 0 for the first plan).", "ok");
+      } catch (err) {
+        setStatus(statusEl, "Failed: " + err.message, "err");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("subscribeBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("subscribeBtn");
+      const statusEl = document.getElementById("subscribeStatus");
+      const logEl = document.getElementById("subLog");
+      const planId = document.getElementById("subPlanId").value.trim();
+      const price = document.getElementById("subPrice").value.trim();
+      const secret = document.getElementById("subSecret").value.trim();
+      if (!secret) {
+        setStatus(statusEl, "Pick a secret first — it replaces your identity for this subscription.", "err");
+        return;
+      }
+      btn.disabled = true;
+      setStatus(statusEl, "Subscribing…", "pending");
+      try {
+        const manifest = `
+fn main() {
+    let subs = var!["subs"];
+    let account = var!["account"];
+    let payment = account.withdraw(XTR, ${price}u64);
+    let badge = subs.subscribe(${planId}u32, "${secret}", payment);
+    account.deposit(badge);
+}`;
+        const result = await submitManifestAndWait(manifest, { subs: SUBSCRIPTION, account: accountAddress });
+        showLog(logEl, eventsSummary(result));
+        setStatus(statusEl, "Subscribed! Membership badge deposited into your account.", "ok");
+      } catch (err) {
+        setStatus(statusEl, "Failed (already subscribed with this secret, or use 'renew' instead): " + err.message, "err");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("checkActiveBtn").addEventListener("click", async () => {
+      const statusEl = document.getElementById("activeStatus");
+      const planId = document.getElementById("subPlanId").value.trim();
+      const secret = document.getElementById("subSecret").value.trim();
+      setStatus(statusEl, "Checking…", "pending");
+      try {
+        const manifest = `
+fn main() {
+    let subs = var!["subs"];
+    subs.is_active(${planId}u32, "${secret}");
+}`;
+        const result = await submitManifestAndWait(manifest, { subs: SUBSCRIPTION });
+        const finalize = result.result;
+        const isActive = finalize && finalize.execution_results && finalize.execution_results.length > 0
+          ? JSON.stringify(finalize.execution_results[finalize.execution_results.length - 1].indexed.value)
+          : "unknown";
+        setStatus(statusEl, "is_active raw result: " + isActive, "ok");
+      } catch (err) {
+        setStatus(statusEl, "Failed: " + err.message, "err");
+      }
+    });
+  </script>
+</body>
+</html>
