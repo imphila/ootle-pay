@@ -212,22 +212,33 @@
       manifest, variables, seal_signer_key_id: null, signing_key_ids: [], max_fee: 100000, dry_run: true, blobs: {},
     });
   }
+  // Dry-run responses (transactions.submit_manifest with dry_run:true) wrap the finalize
+  // object one level deeper (result.result.finalize) than a submitted+awaited transaction
+  // (result.result directly) - this normalizes both so every reader works on either shape.
+  function getFinalize(result) {
+    const r = result && result.result;
+    if (!r) return null;
+    return r.finalize || r;
+  }
   function readScalar(result) {
-    const finalize = result && result.result;
-    if (!finalize || !finalize.execution_results.length) return null;
+    const finalize = getFinalize(result);
+    if (!finalize || !finalize.execution_results || !finalize.execution_results.length) return null;
     return finalize.execution_results[finalize.execution_results.length - 1].indexed.value;
   }
   function eventsSummary(result) {
-    const finalize = result && result.result;
+    const finalize = getFinalize(result);
     if (!finalize) return "(no result yet — status: " + (result ? result.status : "?") + ")";
     return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
   }
   // Extracts the contract's own panic/reject message so a failed call shows a real reason
   // instead of a vague "submitted, check the log" - null means the transaction fully succeeded.
   function extractFailureReason(result) {
-    if (!result || result.status === "Accepted") return null;
-    const outcome = result.result && result.result.result;
+    if (!result) return null;
+    if (result.status === "Accepted") return null;
+    const finalize = getFinalize(result);
+    const outcome = finalize && finalize.result;
     if (outcome) {
+      if (outcome.Accept) return null;
       if (outcome.AcceptFeeRejectRest) {
         const info = outcome.AcceptFeeRejectRest[1];
         if (info && info.ExecutionFailure) return info.ExecutionFailure.replace(/^At instruction #\d+: /, "");
@@ -235,7 +246,10 @@
       }
       if (outcome.Reject) return typeof outcome.Reject === "string" ? outcome.Reject : JSON.stringify(outcome.Reject);
     }
-    return `Transaction ${(result.status || "failed").replace(/([A-Z])/g, " $1").trim().toLowerCase()}`;
+    if (result.status && result.status !== "Accepted") {
+      return `Transaction ${result.status.replace(/([A-Z])/g, " $1").trim().toLowerCase()}`;
+    }
+    return null;
   }
   function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
   function short(pk) { return pk ? pk.slice(0, 10) + "…" + pk.slice(-8) : ""; }
