@@ -172,6 +172,7 @@
       <h2>Merchant identity</h2>
       <dl class="kv">
         <dt>Public key (share this with customers)</dt><dd id="accountPk"></dd>
+        <dt>Wallet balance</dt><dd id="walletBalance">—</dd>
       </dl>
     </div>
   </div>
@@ -220,6 +221,22 @@
     try { return JSON.parse(localStorage.getItem(PLANS_KEY) || "[]"); } catch { return []; }
   }
   function savePlans(plans) { localStorage.setItem(PLANS_KEY, JSON.stringify(plans)); }
+
+  async function refreshBalance() {
+    try {
+      const res = await rpc("accounts.get_balances", { account: accountAddress, refresh: true });
+      const xtr = res.balances.find((b) => b.token_symbol === "tTARI" || b.token_symbol === "XTR");
+      const badges = res.balances.filter((b) => b.resource_type === "NonFungible");
+      const el = document.getElementById("walletBalance");
+      if (!el) return;
+      const amount = xtr ? (Number(xtr.balance) / 10 ** xtr.divisibility).toFixed(xtr.divisibility) : "0";
+      const badgeNote = badges.length ? ` · ${badges.map((b) => b.token_symbol).join(", ")}` : "";
+      el.textContent = `${amount} ${xtr ? xtr.token_symbol : "XTR"}${badgeNote}`;
+    } catch (err) {
+      const el = document.getElementById("walletBalance");
+      if (el) el.textContent = "unavailable (" + err.message + ")";
+    }
+  }
 
   async function refreshStats() {
     try {
@@ -306,6 +323,7 @@
       { subs: SUBSCRIPTION, account }
     );
     alert(eventsSummary(result) || "Claimed (no events returned).");
+    refreshBalance();
   }
 
   document.getElementById("connectBtn").addEventListener("click", async () => {
@@ -329,13 +347,14 @@
       document.getElementById("appPanels").style.display = "block";
       renderPlans();
       refreshStats();
+      refreshBalance();
     } catch (err) {
       setStatus(statusEl, "Failed: " + err.message, "err");
       btn.disabled = false;
     }
   });
 
-  document.getElementById("refreshStatsBtn").addEventListener("click", refreshStats);
+  document.getElementById("refreshStatsBtn").addEventListener("click", () => { refreshStats(); refreshBalance(); });
 
   document.getElementById("registerBtn").addEventListener("click", async () => {
     const statusEl = document.getElementById("registerStatus");
@@ -351,6 +370,7 @@
       showLog(logEl, summary);
       setStatus(statusEl, summary.includes("MerchantRegistered") ? "Registered." : "Submitted — check log.", summary.includes("MerchantRegistered") ? "ok" : "pending");
       refreshStats();
+      refreshBalance();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   });
 
@@ -367,6 +387,7 @@
       showLog(logEl, eventsSummary(result));
       setStatus(statusEl, "Stake added.", "ok");
       refreshStats();
+      refreshBalance();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   });
 

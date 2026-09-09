@@ -123,6 +123,7 @@
   </div>
 
   <div id="appPanels">
+    <div class="status" id="walletBalance" style="margin-bottom:14px; display:flex;">—</div>
     <div class="switch">
       <button id="tabPay" class="active">One-time payment</button>
       <button id="tabSub">Subscribe</button>
@@ -198,6 +199,19 @@
     return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
   }
   function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
+
+  async function refreshBalance() {
+    const el = document.getElementById("walletBalance");
+    if (!el) return;
+    try {
+      const res = await rpc("accounts.get_balances", { account: accountAddress, refresh: true });
+      const xtr = res.balances.find((b) => b.token_symbol === "tTARI" || b.token_symbol === "XTR");
+      const amount = xtr ? (Number(xtr.balance) / 10 ** xtr.divisibility).toFixed(xtr.divisibility) : "0";
+      el.textContent = `Balance: ${amount} ${xtr ? xtr.token_symbol : "XTR"}`;
+    } catch (err) {
+      el.textContent = "Balance unavailable (" + err.message + ")";
+    }
+  }
   function showLog(el, text) { el.style.display = "block"; el.textContent = text; }
 
   // Prefill from a merchant-shared link, e.g. pay.html?merchant=<pk>&plan=0&price=50&mode=subscribe
@@ -245,6 +259,7 @@
       accountPublicKey = account.owner_public_key;
       document.getElementById("connectPanel").style.display = "none";
       document.getElementById("appPanels").style.display = "block";
+      refreshBalance();
     } catch (err) {
       setStatus(statusEl, "Failed: " + err.message, "err");
       btn.disabled = false;
@@ -265,6 +280,7 @@
       const summary = eventsSummary(result);
       showLog(logEl, summary);
       setStatus(statusEl, summary.includes("PaymentProcessed") ? "Sent — only the fee is on the record." : "Rejected — see log.", summary.includes("PaymentProcessed") ? "ok" : "err");
+      refreshBalance();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   });
 
@@ -284,6 +300,7 @@
       );
       showLog(logEl, eventsSummary(result));
       setStatus(statusEl, "Done.", "ok");
+      refreshBalance();
     } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
   }
   document.getElementById("subscribeBtn").addEventListener("click", () => doSubscribe("subscribe"));
