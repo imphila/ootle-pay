@@ -125,31 +125,31 @@ Deployed and exercised for real on the Tari Ootle **esme** testnet (via a local
 
 | Contract | Template address |
 |---|---|
-| `MerchantRegistry` | `template_06d153def5e163e8a76071fc3189cca0c70e80f1559020e8078fd1a40da74bd3` |
-| `Storefront` | `template_6efdd10551556df7b46c2c1bbe837029f1c8fe3a086c660294335524f27bcda6` |
-| `SubscriptionManager` | `template_17de369eabf37fa5db8a17b4cf5cbc99677a330aa338ce69f52c98dd54c76e95` |
+| `MerchantRegistry` | `template_41ab42e3ec32a60355957fa8eda7270be0f5b2b9f76b95bb10111d1c8bf9d241` |
+| `Storefront` | `template_a7b6474dd1e2a1656e6d8ad3f7fa8b0bc17961dbe243f073a637fd61d4c39915` |
+| `SubscriptionManager` | `template_2eeb3142073845b8e22ee4e8184294b5a80b2dc2af579faeafa4ea47a8e02e83` |
 
 **Deployed component instances** (wired together — `storefront` and `subscription` both point at
 the same registry):
 
 | Contract | Component address |
 |---|---|
-| `merchant_registry` | `component_1d32aca29e61e70736d16f3e2603dffb6eb7859cfda60ab09977da73711aa7ed` |
-| `storefront` | `component_19ca26614a5e0641430c38fbafc9096274b2baac096814e8e7b376f7229b540f` |
-| `subscription` | `component_61cbdff66b9eed52c66208a008b2e8453577c1d65243f71adff5ab3797185a84` |
+| `merchant_registry` | `component_b4285eaed1245a3950d83e914b781c781d3dc8c1f76664dfd7a537c6521bfd0f` |
+| `storefront` | `component_5cefbb002b9db15e958492bda15ad6d9ae09107bac742433b4f320a003f53248` |
+| `subscription` | `component_7dfce9c6b42ea8c4e4558a35156241730468202d91f942c53a4c5126edee64be` |
 
 **Real transactions exercising every flow:**
 
 | Flow | Transaction id | Result |
 |---|---|---|
-| Register as merchant | `603c05e40db845d7c4fbd3867f9df56911ee8d4bcc09c5ef89ca17840f633bf8` | `MerchantRegistry.MerchantRegistered` — tier `Basic` |
-| Create a product | `3512865ec9e8edbc1b288e61e3d04e59e6ce993b99e82ea2116fae71a8b83932` | `Storefront.ProductCreated {merchant, price: 20, product_id: 0}` |
-| Buy that product | `d338ff791ea791fa07329cd22f8541f545b4f09bbc08570945f1d5286784dd28` | `Storefront.OrderPlaced {product_id: 0, merchant, buyer, amount: 20, order_number: 1}` |
-| Claim product revenue | `332c464928be00d7fcb6dd7e0f81efa86efb445e424a99611fa68dcc983a168f` | Vault drained — `get_product_info(0)` afterward read back `(20, 1, 0)` |
-| Create a subscription plan | `9648b413184cbc05a300be3ac933d8499a96e36a7107d34b7f290bda4c97deaf` | `SubscriptionManager.PlanCreated {merchant, plan_id: 0, price: 50}` |
-| Subscribe | `efd248981a2c58400f890f8454523a0c1158d110867a7529997ffebe2510d457` | `SubscriptionRenewed {plan_id: 0, subscriber, paid_until_period: 1}` |
-| Advance the billing period | `0079c84dc374644e3c3f7e81af55b4195b02ae6dbd39af0ef35b95270cf02ab2` | Accepted |
-| Renew | `be2b7a99d1b0e3d1d386de7987b501d49d41235984fd34857b80c4ab091e5c12` | `SubscriptionRenewed {..., paid_until_period: 2}` — `is_active` read back `true` afterward |
+| Register as merchant | `ebec2c074d990cb124a9405c71d1bd25d99d3bc6e41a5caf9bf57607f4902cce` | `MerchantRegistry.MerchantRegistered` — tier `Basic` |
+| Create a product | `7c3adbacfa7c3c3a7b3eef73269ff09ea53de7bb2d3311d02045e30c7ef884c1` | `Storefront.ProductCreated {merchant, price: 20, product_id: 0}` |
+| Buy that product | `007ad161c1db86b79ab3a5b50f1ede543d45656883b4c229296a08fef3d0e548` | `Storefront.OrderPlaced {product_id: 0, merchant, buyer, amount: 20, order_number: 1}` |
+| Claim product revenue | `3d26c5619ca74df727823ebba8e7fe8941fd12a7d613aa97f6a3f7fa7bdc3c0e` | Vault drained — `get_product_info(0)` afterward read back `(20, 1, 0)` |
+| Create a subscription plan | `a98539a87af1648f68b64197289bf30940b20c3a3ada650b31ad4defadd195b0` | `SubscriptionManager.PlanCreated {merchant, plan_id: 0, price: 50}` |
+| Subscribe | `70fda4211344a8a26dba081a35755dafdb3f96187eacb26878d48deb0282397a` | `SubscriptionRenewed {plan_id: 0, subscriber, paid_until_period: 1}` |
+| Advance the billing period | `8b6d19f6b0088f6eba213fdfa9883fab2b3ee7d4eb8506c265f8f8f13920a0c2` | Accepted |
+| Renew | `0ba40b6149b6db089fa2b885ef091b6bb135eb63806fa6ac302eaf2b529e4f6e` | `SubscriptionRenewed {..., paid_until_period: 2}` — `is_active` read back `true` afterward |
 
 These were submitted via the wallet daemon's `transactions.submit_manifest` JSON-RPC method, using
 its Rust-like manifest DSL (parsed with `syn` - e.g. `registry.register(account.withdraw(XTR,
