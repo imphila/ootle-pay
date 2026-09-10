@@ -188,7 +188,7 @@
 
 <script>
   const OWNER_PUBLIC_KEY = "44304ffa52412b5a6be4b8da0523e755858b0194023c724dd254d404fefe4a73";
-  const REGISTRY = "component_c650b27fef7070968f44812b0a16009c9f807101b77bca2ddc40623e482ca0a4";
+  const REGISTRY = "component_07ef58a3d3dbaa9fe6195bd2929c6dac4161e1aa3e2e29cd5bcdb05c7e8b8254";
   const INDEXER = "https://ootle-indexer-a.tari.com";
 
   let daemonUrl = "", authToken = "", accountAddress = "", accountPublicKey = "", rpcId = 1;
@@ -261,6 +261,8 @@
     if (!Number.isFinite(n)) return `${raw} tTARI`;
     return (n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 6 }) + " tTARI";
   }
+  // The slash-amount input is in tTARI; the chain wants raw microTARI.
+  function toRaw(tari) { return Math.round(Number(tari) * 1_000_000); }
 
   async function fetchEvents(substateId) {
     const res = await fetch(`${INDEXER}/transactions/events?substate_id=${substateId}&limit=500`);
@@ -337,7 +339,7 @@
         <td>${fmtTari(r.staked)}</td>
         <td><span class="pill ${r.active ? "active" : "inactive"}">${r.active ? "active" : "exit requested"}</span></td>
         <td>${r.active ? "—" : `<div class="actions"><input class="slash-amt" data-finalize-account="${r.pk}" placeholder="account_..." /><button class="ghost" data-finalize="${r.pk}">Finalize</button></div>`}</td>
-        <td><div class="actions"><input class="slash-amt" type="number" value="${Math.min(100, r.staked)}" data-slash-amt="${r.pk}" /><button class="ghost" data-slash="${r.pk}">Slash</button></div></td>
+        <td><div class="actions"><input class="slash-amt" type="number" value="${Math.min(100, r.staked / 1_000_000)}" data-slash-amt="${r.pk}" /><button class="ghost" data-slash="${r.pk}">Slash</button></div></td>
       `;
       tbody.appendChild(tr);
     }
@@ -355,10 +357,10 @@
   }
 
   async function slashMerchant(pk, amount) {
-    if (!confirm(`Slash ${fmtTari(amount)} from ${short(pk)}? This cannot be undone.`)) return;
+    if (!confirm(`Slash ${amount} tTARI from ${short(pk)}? This cannot be undone.`)) return;
     try {
       const result = await submitManifestAndWait(
-        `fn main() {\n    let registry = var!["registry"];\n    registry.slash(PublicKey("${pk}"), ${amount}u64);\n}`,
+        `fn main() {\n    let registry = var!["registry"];\n    registry.slash(PublicKey("${pk}"), ${toRaw(amount)}u64);\n}`,
         { registry: REGISTRY }
       );
       const failure = extractFailureReason(result);

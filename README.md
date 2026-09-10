@@ -134,22 +134,22 @@ the same registry):
 
 | Contract | Component address |
 |---|---|
-| `merchant_registry` | `component_c650b27fef7070968f44812b0a16009c9f807101b77bca2ddc40623e482ca0a4` |
-| `storefront` | `component_4b0433132e4c6e39b2378bb28a8ba19ea950151ad131797bdd0812f9bbe139e3` |
-| `subscription` | `component_774fdcd332d2b9c81add05ce1476863a8904886f8eb6ef041b35e391b93e865f` |
+| `merchant_registry` | `component_07ef58a3d3dbaa9fe6195bd2929c6dac4161e1aa3e2e29cd5bcdb05c7e8b8254` |
+| `storefront` | `component_72de258522c0fea2c6f5d98449cb1387260d622aace6afc06512e3d83c999060` |
+| `subscription` | `component_20f6aa88777ca93ad1ed04ec6a6e77c6a1c27b9c5ca252d2130fdd3b7ab19a23` |
 
 **Real transactions exercising every flow:**
 
 | Flow | Transaction id | Result |
 |---|---|---|
-| Register as merchant | `5cd1e976e303eb1ae736e7f7f4d19d45894f2d18caa75ef16ad6197100943c2c` | `MerchantRegistry.MerchantRegistered` — tier `Basic` |
-| Create a product | `7631c15767b84450d7ca404d4f481918827a9693a6be9111c4c55e6571124c90` | `Storefront.ProductCreated {merchant, price: 20, product_id: 0}` |
-| Buy that product | `9f318574b217e8065e190d17f134a77ac89acb47c5d155f85c81256b95afaf5f` | `Storefront.OrderPlaced {product_id: 0, merchant, buyer, amount: 20, order_number: 1}` |
-| Claim product revenue | `8d7cd92e808d59a154188f4f4060b9dd659a599fe1442569754b033d05508525` | Vault drained — `get_product_info(0)` afterward read back `(20, 1, 0)` |
-| Create a subscription plan | `2d32b33a7595423ec61cebc4709ec795b0d90d45ede9aff5bd9ec25a16718435` | `SubscriptionManager.PlanCreated {merchant, plan_id: 0, price: 50}` |
-| Subscribe | `4659c0a89c021378331dfdd54e534b3519703555a42e53ce33050b0cb6477e67` | `SubscriptionRenewed {plan_id: 0, subscriber, paid_until_period: 1}` |
-| Advance the billing period | `b070245ce22b4d2845fd95c181e9f1f5db3b566be83f2727257c9f8fc928a853` | Accepted |
-| Renew | `aede34ff5b450303493fc0b72c7b92561e44b835dc7bcb18d149c1bae4b17875` | `SubscriptionRenewed {..., paid_until_period: 2}` — `is_active` read back `true` afterward |
+| Register as merchant | `3f2bcc2afcca3e2c5804b158d5d2285e6d7618f37284f6785325fee01fcecc55` | `MerchantRegistry.MerchantRegistered` — tier `Basic` |
+| Create a product | `dbfff41038e910feeaaf9a747936a82c6de74afa4286916aa6ddd0db8786c43c` | `Storefront.ProductCreated {merchant, price: 20, product_id: 0}` |
+| Buy that product | `436660cc699316caaa0eda8185a38349600c7f0574dea08d0d7462300d32bd25` | `Storefront.OrderPlaced {product_id: 0, merchant, buyer, amount: 20, order_number: 1}` |
+| Claim product revenue | `ebf77fc8f505f3b4785647c2acae9ea19ade34aabba5453beab184eb118ca64f` | Vault drained — `get_product_info(0)` afterward read back `(20, 1, 0)` |
+| Create a subscription plan | `999cf14eb40d69b7fe598d9bba71894ae621b47141ce566950ae10c1c221cf25` | `SubscriptionManager.PlanCreated {merchant, plan_id: 0, price: 50}` |
+| Subscribe | `ca6cbd491bbe6f9961ad31255567fb860118dd200759a695cb1603dc241e9302` | `SubscriptionRenewed {plan_id: 0, subscriber, paid_until_period: 1}` |
+| Advance the billing period | `8e66f71c9a57c4404fecdd3d4e0d007f686fdafc53af6dbb344dd0dcb0a585cf` | Accepted |
+| Renew | `aa484f282ea9f75b6490a5397a20e134c6f54459d422aa5564d7cffa7dbe5968` | `SubscriptionRenewed {..., paid_until_period: 2}` — `is_active` read back `true` afterward |
 
 These were submitted via the wallet daemon's `transactions.submit_manifest` JSON-RPC method, using
 its Rust-like manifest DSL (parsed with `syn` - e.g. `registry.register(account.withdraw(XTR,

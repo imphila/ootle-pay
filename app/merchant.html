@@ -253,9 +253,9 @@
 </div>
 
 <script>
-  const REGISTRY = "component_c650b27fef7070968f44812b0a16009c9f807101b77bca2ddc40623e482ca0a4";
-  const STOREFRONT = "component_4b0433132e4c6e39b2378bb28a8ba19ea950151ad131797bdd0812f9bbe139e3";
-  const SUBSCRIPTION = "component_774fdcd332d2b9c81add05ce1476863a8904886f8eb6ef041b35e391b93e865f";
+  const REGISTRY = "component_07ef58a3d3dbaa9fe6195bd2929c6dac4161e1aa3e2e29cd5bcdb05c7e8b8254";
+  const STOREFRONT = "component_72de258522c0fea2c6f5d98449cb1387260d622aace6afc06512e3d83c999060";
+  const SUBSCRIPTION = "component_20f6aa88777ca93ad1ed04ec6a6e77c6a1c27b9c5ca252d2130fdd3b7ab19a23";
   const INDEXER = "https://ootle-indexer-a.tari.com";
   const CATALOG_KEY = "ootlePay.catalog";       // { products: {id: name}, plans: {id: name} }
   const REVENUE_LOG_KEY = "ootlePay.revenueLog"; // { seen: {eventKey: observedAtMs|null} }
@@ -332,6 +332,8 @@
     if (!Number.isFinite(n)) return `${raw} tTARI`;
     return (n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 6 }) + " tTARI";
   }
+  // Amount input fields are in tTARI; the chain wants raw microTARI.
+  function toRaw(tari) { return Math.round(Number(tari) * 1_000_000); }
 
   function loadCatalog() { try { return JSON.parse(localStorage.getItem(CATALOG_KEY) || '{"products":{},"plans":{}}'); } catch { return { products: {}, plans: {} }; } }
   function saveCatalog(c) { localStorage.setItem(CATALOG_KEY, JSON.stringify(c)); }
@@ -404,7 +406,7 @@
     setStatus(statusEl, "Staking & registering…", "pending");
     try {
       const result = await submitManifestAndWait(
-        `fn main() {\n    let registry = var!["registry"];\n    let account = var!["account"];\n    let stake = account.withdraw(XTR, ${stake}u64);\n    let badge = registry.register(stake);\n    account.deposit(badge);\n}`,
+        `fn main() {\n    let registry = var!["registry"];\n    let account = var!["account"];\n    let stake = account.withdraw(XTR, ${toRaw(stake)}u64);\n    let badge = registry.register(stake);\n    account.deposit(badge);\n}`,
         { registry: REGISTRY, account: accountAddress }
       );
       showLog(logEl, eventsSummary(result));
@@ -421,7 +423,7 @@
     setStatus(statusEl, "Adding stake…", "pending");
     try {
       const result = await submitManifestAndWait(
-        `fn main() {\n    let registry = var!["registry"];\n    let account = var!["account"];\n    let stake = account.withdraw(XTR, ${stake}u64);\n    registry.add_stake(stake);\n}`,
+        `fn main() {\n    let registry = var!["registry"];\n    let account = var!["account"];\n    let stake = account.withdraw(XTR, ${toRaw(stake)}u64);\n    registry.add_stake(stake);\n}`,
         { registry: REGISTRY, account: accountAddress }
       );
       showLog(logEl, eventsSummary(result));
@@ -440,7 +442,7 @@
     setStatus(statusEl, "Creating product…", "pending");
     try {
       const result = await submitManifestAndWait(
-        `fn main() {\n    let store = var!["store"];\n    store.create_product(PublicKey("${accountPublicKey}"), ${price}u64, XTR);\n}`,
+        `fn main() {\n    let store = var!["store"];\n    store.create_product(PublicKey("${accountPublicKey}"), ${toRaw(price)}u64, XTR);\n}`,
         { store: STOREFRONT }
       );
       const failure = extractFailureReason(result);
@@ -464,7 +466,7 @@
     setStatus(statusEl, "Creating plan…", "pending");
     try {
       const result = await submitManifestAndWait(
-        `fn main() {\n    let subs = var!["subs"];\n    subs.create_plan(PublicKey("${accountPublicKey}"), ${price}u64, XTR);\n}`,
+        `fn main() {\n    let subs = var!["subs"];\n    subs.create_plan(PublicKey("${accountPublicKey}"), ${toRaw(price)}u64, XTR);\n}`,
         { subs: SUBSCRIPTION }
       );
       const failure = extractFailureReason(result);
