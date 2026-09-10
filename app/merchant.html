@@ -325,6 +325,12 @@
   function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
   function showLog(el, text) { el.style.display = "block"; el.textContent = text; }
   function short(pk) { return pk ? pk.slice(0, 8) + "…" + pk.slice(-6) : ""; }
+  // On-chain Amounts are raw microTARI (divisibility 6, same as the wallet's own balance display).
+  function fmtTari(raw) {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return `${raw} tTARI`;
+    return (n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 6 }) + " tTARI";
+  }
 
   function loadCatalog() { try { return JSON.parse(localStorage.getItem(CATALOG_KEY) || '{"products":{},"plans":{}}'); } catch { return { products: {}, plans: {} }; } }
   function saveCatalog(c) { localStorage.setItem(CATALOG_KEY, JSON.stringify(c)); }
@@ -543,9 +549,9 @@
       if (isSameDay(seenAt, now)) today += d.amount;
       if (isSameMonth(seenAt, now)) month += d.amount;
     }
-    document.getElementById("statToday").textContent = today.toFixed(0) + " XTR";
-    document.getElementById("statMonth").textContent = month.toFixed(0) + " XTR";
-    document.getElementById("statAllTime").textContent = allTime.toFixed(0) + " XTR";
+    document.getElementById("statToday").textContent = fmtTari(today);
+    document.getElementById("statMonth").textContent = fmtTari(month);
+    document.getElementById("statAllTime").textContent = fmtTari(allTime);
     document.getElementById("statOrderCount").textContent = `${myOrders.length} order(s), ${myRenewals.length} renewal(s)`;
 
     // ── Products table ──
@@ -568,7 +574,7 @@
         } catch { claimable = "?"; }
         const name = catalog.products[id] || `Product #${id}`;
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${name}</td><td>${created.payload.price} XTR</td><td>${orders.length}</td><td>${revenue} XTR</td><td>${claimable} XTR</td><td class="actions"><button class="ghost" data-claim-product="${id}">Claim</button></td>`;
+        tr.innerHTML = `<td>${name}</td><td>${fmtTari(created.payload.price)}</td><td>${orders.length}</td><td>${fmtTari(revenue)}</td><td>${fmtTari(claimable)}</td><td class="actions"><button class="ghost" data-claim-product="${id}">Claim</button></td>`;
         productsTable.appendChild(tr);
       }
       productsTable.querySelectorAll("[data-claim-product]").forEach((btn) => btn.addEventListener("click", () => claimProductRevenue(Number(btn.dataset.claimProduct))));
@@ -590,7 +596,7 @@
         const currentPeriod = renewals.length ? Math.max(...renewals.map((e) => Number(e.payload.paid_until_period))) - 1 : 0;
         const name = catalog.plans[id] || `Plan #${id}`;
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${name}</td><td>${created.payload.price} XTR</td><td>${currentPeriod}</td><td>${subscribers}</td><td>${revenue} XTR</td><td class="actions"><button class="ghost" data-advance-plan="${id}">Advance period</button> <button class="ghost" data-claim-plan="${id}">Claim</button></td>`;
+        tr.innerHTML = `<td>${name}</td><td>${fmtTari(created.payload.price)}</td><td>${currentPeriod}</td><td>${subscribers}</td><td>${fmtTari(revenue)}</td><td class="actions"><button class="ghost" data-advance-plan="${id}">Advance period</button> <button class="ghost" data-claim-plan="${id}">Claim</button></td>`;
         plansTable.appendChild(tr);
       }
       plansTable.querySelectorAll("[data-advance-plan]").forEach((btn) => btn.addEventListener("click", () => advancePeriod(Number(btn.dataset.advancePlan))));
@@ -614,7 +620,7 @@
       for (const item of combined.slice(0, 30)) {
         const row = document.createElement("div");
         row.className = "feed-row";
-        row.innerHTML = `<span class="kind">${item.kind}</span><span>${item.label} <span class="who">· ${short(item.who)}</span></span><span class="amt">${item.amount} XTR</span>`;
+        row.innerHTML = `<span class="kind">${item.kind}</span><span>${item.label} <span class="who">· ${short(item.who)}</span></span><span class="amt">${fmtTari(item.amount)}</span>`;
         feed.appendChild(row);
       }
     }
