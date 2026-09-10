@@ -1,3 +1,4 @@
+<meta charset="UTF-8">
 <title>Registry Admin — Ootle Pay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -169,10 +170,11 @@
         <code>get_merchant_info</code> — not a database, just what's actually on-chain right now.</p>
       <div class="overflow">
         <table class="data" id="merchantsTable" style="display:none">
-          <tr><th>Merchant</th><th>Tier</th><th>Staked</th><th>Status</th><th>Finalize exit</th><th>Slash</th></tr>
+          <thead><tr><th>Merchant</th><th>Tier</th><th>Staked</th><th>Status</th><th>Finalize exit</th><th>Slash</th></tr></thead>
+          <tbody id="merchantsTbody"></tbody>
         </table>
       </div>
-      <div class="empty-note" id="merchantsEmpty">No merchants registered yet.</div>
+      <div class="empty-note" id="merchantsEmpty">Loading…</div>
     </div>
 
     <div class="card">
@@ -322,10 +324,11 @@
     } catch { document.getElementById("statTreasury").textContent = "—"; }
 
     const table = document.getElementById("merchantsTable");
+    const tbody = document.getElementById("merchantsTbody");
     const empty = document.getElementById("merchantsEmpty");
-    if (rows.length === 0) { table.style.display = "none"; empty.style.display = "block"; return; }
+    if (rows.length === 0) { table.style.display = "none"; empty.textContent = "No merchants registered yet."; empty.style.display = "block"; return; }
     empty.style.display = "none"; table.style.display = "table";
-    table.querySelectorAll("tr:not(:first-child)").forEach((r) => r.remove());
+    tbody.innerHTML = "";
     for (const r of rows) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -336,7 +339,7 @@
         <td>${r.active ? "—" : `<div class="actions"><input class="slash-amt" data-finalize-account="${r.pk}" placeholder="account_..." /><button class="ghost" data-finalize="${r.pk}">Finalize</button></div>`}</td>
         <td><div class="actions"><input class="slash-amt" type="number" value="${Math.min(100, r.staked)}" data-slash-amt="${r.pk}" /><button class="ghost" data-slash="${r.pk}">Slash</button></div></td>
       `;
-      table.appendChild(tr);
+      tbody.appendChild(tr);
     }
     table.querySelectorAll("[data-slash]").forEach((btn) => btn.addEventListener("click", () => {
       const pk = btn.dataset.slash;
