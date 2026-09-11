@@ -212,7 +212,8 @@
       <div id="createProductStatus" class="status"></div>
       <div class="overflow" style="margin-top:16px">
         <table class="data" id="productsTable" style="display:none">
-          <tr><th>Product</th><th>Price</th><th>Orders</th><th>Revenue (all-time)</th><th>Claimable now</th><th></th></tr>
+          <thead><tr><th>Product</th><th>Price</th><th>Orders</th><th>Revenue (all-time)</th><th>Claimable now</th><th></th></tr></thead>
+          <tbody id="productsTbody"></tbody>
         </table>
       </div>
       <div class="empty-note" id="productsEmpty">No products yet — create one above.</div>
@@ -233,7 +234,8 @@
       <div id="createPlanStatus" class="status"></div>
       <div class="overflow" style="margin-top:16px">
         <table class="data" id="plansTable" style="display:none">
-          <tr><th>Plan</th><th>Price/period</th><th>Period</th><th>Subscribers</th><th>Revenue (all-time)</th><th></th></tr>
+          <thead><tr><th>Plan</th><th>Price/period</th><th>Period</th><th>Subscribers</th><th>Revenue (all-time)</th><th></th></tr></thead>
+          <tbody id="plansTbody"></tbody>
         </table>
       </div>
       <div class="empty-note" id="plansEmpty">No plans yet — create one above.</div>
@@ -513,8 +515,8 @@
     const [storeEvents, subEvents] = await Promise.all([fetchEvents(STOREFRONT), fetchEvents(SUBSCRIPTION)]);
     const catalog = loadCatalog();
 
-    const myProductsCreated = storeEvents.filter((e) => e.topic === "PrivatePay.ProductCreated" && e.payload.merchant === accountPublicKey);
-    const myOrders = storeEvents.filter((e) => e.topic === "PrivatePay.OrderPlaced" && e.payload.merchant === accountPublicKey);
+    const myProductsCreated = storeEvents.filter((e) => e.topic === "Storefront.ProductCreated" && e.payload.merchant === accountPublicKey);
+    const myOrders = storeEvents.filter((e) => e.topic === "Storefront.OrderPlaced" && e.payload.merchant === accountPublicKey);
     const myPlansCreated = subEvents.filter((e) => e.topic === "SubscriptionManager.PlanCreated" && e.payload.merchant === accountPublicKey);
     const myPlanIds = new Set(myPlansCreated.map((e) => e.payload.plan_id));
     const myRenewals = subEvents.filter((e) => e.topic === "SubscriptionManager.SubscriptionRenewed" && myPlanIds.has(e.payload.plan_id));
@@ -560,37 +562,43 @@
     // ── Products table ──
     const productIds = [...new Set(myProductsCreated.map((e) => e.payload.product_id))];
     const productsTable = document.getElementById("productsTable");
+    const productsTbody = document.getElementById("productsTbody");
     const productsEmpty = document.getElementById("productsEmpty");
     if (productIds.length === 0) { productsTable.style.display = "none"; productsEmpty.style.display = "block"; }
     else {
       productsEmpty.style.display = "none"; productsTable.style.display = "table";
-      productsTable.querySelectorAll("tr:not(:first-child)").forEach((r) => r.remove());
-      for (const id of productIds) {
-        const created = myProductsCreated.find((e) => e.payload.product_id === id);
-        const orders = myOrders.filter((e) => e.payload.product_id === id);
-        const revenue = orders.reduce((sum, o) => sum + Number(o.payload.amount), 0);
-        let claimable = "…";
+      // Fire every product's get_product_info in parallel - sequential awaits here would
+      // otherwise add several seconds of dry-run round-trip latency per product.
+      const claimables = await Promise.all(productIds.map(async (id) => {
         try {
           const infoRaw = await dryRun(`fn main() {\n    let store = var!["store"];\n    store.get_product_info(${id}u32);\n}`, { store: STOREFRONT });
           const info = readScalar(infoRaw);
-          claimable = info ? info[2] : "?";
-        } catch { claimable = "?"; }
+          return info ? info[2] : "?";
+        } catch { return "?"; }
+      }));
+      productsTbody.innerHTML = "";
+      productIds.forEach((id, i) => {
+        const created = myProductsCreated.find((e) => e.payload.product_id === id);
+        const orders = myOrders.filter((e) => e.payload.product_id === id);
+        const revenue = orders.reduce((sum, o) => sum + Number(o.payload.amount), 0);
+        const claimable = claimables[i];
         const name = (created && created.payload.name) || catalog.products[id] || `Product #${id}`;
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${name}</td><td>${fmtTari(created.payload.price)}</td><td>${orders.length}</td><td>${fmtTari(revenue)}</td><td>${fmtTari(claimable)}</td><td class="actions"><button class="ghost" data-claim-product="${id}">Claim</button></td>`;
-        productsTable.appendChild(tr);
-      }
-      productsTable.querySelectorAll("[data-claim-product]").forEach((btn) => btn.addEventListener("click", () => claimProductRevenue(Number(btn.dataset.claimProduct))));
+        productsTbody.appendChild(tr);
+      });
+      productsTbody.querySelectorAll("[data-claim-product]").forEach((btn) => btn.addEventListener("click", () => claimProductRevenue(Number(btn.dataset.claimProduct))));
     }
 
     // ── Plans table ──
     const planIds = [...myPlanIds];
     const plansTable = document.getElementById("plansTable");
+    const plansTbody = document.getElementById("plansTbody");
     const plansEmpty = document.getElementById("plansEmpty");
     if (planIds.length === 0) { plansTable.style.display = "none"; plansEmpty.style.display = "block"; }
     else {
       plansEmpty.style.display = "none"; plansTable.style.display = "table";
-      plansTable.querySelectorAll("tr:not(:first-child)").forEach((r) => r.remove());
+      plansTbody.innerHTML = "";
       for (const id of planIds) {
         const created = myPlansCreated.find((e) => e.payload.plan_id === id);
         const renewals = myRenewals.filter((e) => e.payload.plan_id === id);
@@ -600,10 +608,10 @@
         const name = (created && created.payload.name) || catalog.plans[id] || `Plan #${id}`;
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${name}</td><td>${fmtTari(created.payload.price)}</td><td>${currentPeriod}</td><td>${subscribers}</td><td>${fmtTari(revenue)}</td><td class="actions"><button class="ghost" data-advance-plan="${id}">Advance period</button> <button class="ghost" data-claim-plan="${id}">Claim</button></td>`;
-        plansTable.appendChild(tr);
+        plansTbody.appendChild(tr);
       }
-      plansTable.querySelectorAll("[data-advance-plan]").forEach((btn) => btn.addEventListener("click", () => advancePeriod(Number(btn.dataset.advancePlan))));
-      plansTable.querySelectorAll("[data-claim-plan]").forEach((btn) => btn.addEventListener("click", () => claimPlanRevenue(Number(btn.dataset.claimPlan))));
+      plansTbody.querySelectorAll("[data-advance-plan]").forEach((btn) => btn.addEventListener("click", () => advancePeriod(Number(btn.dataset.advancePlan))));
+      plansTbody.querySelectorAll("[data-claim-plan]").forEach((btn) => btn.addEventListener("click", () => claimPlanRevenue(Number(btn.dataset.claimPlan))));
     }
 
     // ── Activity feed ──
