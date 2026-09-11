@@ -65,9 +65,11 @@ mod merchant_registry_template {
                 .method("register", rule!(allow_all))
                 .method("add_stake", rule!(allow_all))
                 .method("request_exit", rule!(allow_all))
+                .method("cancel_exit_request", rule!(allow_all))
                 .method("is_registered", rule!(allow_all))
                 .method("get_tier", rule!(allow_all))
-                .method("get_merchant_info", rule!(allow_all));
+                .method("get_merchant_info", rule!(allow_all))
+                .method("get_min_stake", rule!(allow_all));
 
             Component::new(Self {
                 stake_resource,
@@ -146,6 +148,18 @@ mod merchant_registry_template {
             emit_event("MerchantExitRequested", metadata!["merchant" => merchant.to_string()]);
         }
 
+        /// Reverses the caller's own pending exit request, resuming active status - only works
+        /// before the owner has acted on it with `finalize_exit` or `reject_exit`.
+        ///
+        /// Callable by: a registered merchant.
+        pub fn cancel_exit_request(&mut self) {
+            let merchant = CallerContext::transaction_signer_public_key();
+            let entry = self.merchants.get_mut(&merchant).expect("Not registered");
+            assert!(!entry.active, "No pending exit request to cancel");
+            entry.active = true;
+            emit_event("MerchantExitCancelled", metadata!["merchant" => merchant.to_string()]);
+        }
+
         /// Returns an inactive merchant's stake in full and removes their registration.
         ///
         /// Callable by: the registry owner.
@@ -159,6 +173,28 @@ mod merchant_registry_template {
                 "returned" => amount.to_string(),
             ]);
             self.stakes.withdraw(amount)
+        }
+
+        /// Rejects a merchant's pending exit request, confiscating their entire remaining stake into
+        /// the registry's treasury and removing their registration outright. `reason` is recorded
+        /// on-chain so the confiscation is never just an opaque decision - e.g. because a dispute
+        /// investigation found against the merchant and finalizing their exit would let them walk
+        /// away with their bond intact.
+        ///
+        /// Callable by: the registry owner.
+        pub fn reject_exit(&mut self, merchant: RistrettoPublicKeyBytes, reason: String) {
+            let entry = self.merchants.get(&merchant).expect("Not registered");
+            assert!(!entry.active, "Merchant has not requested exit");
+            let amount = entry.staked;
+            self.merchants.remove(&merchant);
+            let confiscated = self.stakes.withdraw(amount);
+            self.treasury.deposit(confiscated);
+
+            emit_event("MerchantExitRejected", metadata![
+                "merchant" => merchant.to_string(),
+                "confiscated" => amount.to_string(),
+                "reason" => reason,
+            ]);
         }
 
         /// Confiscates `amount` of a merchant's stake (e.g. after a dispute finds against them) into
@@ -192,6 +228,12 @@ mod merchant_registry_template {
         /// Callable by: the registry owner.
         pub fn withdraw_treasury(&mut self) -> Bucket {
             self.treasury.withdraw_all()
+        }
+
+        /// The deployer-chosen minimum stake (1x this is Basic, 5x Standard, 20x Premium) - lets
+        /// callers show the real tier thresholds instead of hardcoding them.
+        pub fn get_min_stake(&self) -> Amount {
+            self.min_stake
         }
 
         pub fn is_registered(&self, merchant: RistrettoPublicKeyBytes) -> bool {

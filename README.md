@@ -60,40 +60,49 @@ tiered (Basic / Standard / Premium, at 1×/5×/20× `min_stake`), and can be sla
 registry's treasury for misbehaviour found in off-chain/other-contract dispute resolution.
 
 **Trust assumption, stated plainly:** `request_exit` is self-service (any merchant can mark
-themselves inactive at any time), but `finalize_exit` — the call that actually returns a
-merchant's stake — along with `slash` and `withdraw_treasury`, is owner-only: only whoever
-deployed this registry component can release a merchant's stake back to them or confiscate it.
-This is a deliberate choice, not an oversight — a merchant can't unilaterally walk away from an
-active dispute with their bond in hand — but it does mean the registry owner is a trusted party
-for stake custody specifically, unlike the fully non-custodial `storefront`/`subscription`
-payment flows below, where money never passes through anyone but the two parties to the
-transaction.
+themselves inactive at any time, and `cancel_exit_request` reverses it just as freely as long as
+the owner hasn't acted on it yet), but resolving a pending exit is owner-only: `finalize_exit`
+returns the merchant's stake in full, `reject_exit` instead confiscates the entire stake into the
+treasury with a reason recorded in the `MerchantExitRejected` event — only whoever deployed this
+registry component decides which. This is a deliberate choice, not an oversight — a merchant can't
+unilaterally walk away from an active dispute with their bond in hand, and simply going inactive
+doesn't let them keep collecting either: `is_registered` (which `storefront.buy` and
+`subscription.subscribe`/`renew` both check before moving any money) returns `false` the moment
+`request_exit` is called, not just after the exit is finalized. `slash` and `withdraw_treasury`
+are likewise owner-only. This does mean the registry owner is a trusted party for stake custody
+specifically, unlike the fully non-custodial `storefront`/`subscription` payment flows below,
+where money never passes through anyone but the two parties to the transaction.
 
 ```rust
 new(stake_resource: ResourceAddress, min_stake: Amount) -> Component<Self>
 register(&mut self, stake: Bucket) -> Bucket                       // returns an API badge NFT
-add_stake(&mut self, stake: Bucket)
+add_stake(&mut self, stake: Bucket)                                     // rejected once request_exit has been called
 request_exit(&mut self)
-finalize_exit(&mut self, merchant: RistrettoPublicKeyBytes) -> Bucket   // owner-only
+cancel_exit_request(&mut self)                                          // reverses request_exit, before the owner acts on it
+finalize_exit(&mut self, merchant: RistrettoPublicKeyBytes) -> Bucket   // owner-only; returns the full stake
+reject_exit(&mut self, merchant: RistrettoPublicKeyBytes, reason: String)  // owner-only; confiscates the full stake instead
 slash(&mut self, merchant: RistrettoPublicKeyBytes, amount: Amount)     // owner-only
 treasury_balance(&self) -> Amount
 withdraw_treasury(&mut self) -> Bucket                                   // owner-only
-is_registered(&self, merchant: RistrettoPublicKeyBytes) -> bool
+is_registered(&self, merchant: RistrettoPublicKeyBytes) -> bool          // false once request_exit has been called, not just after finalize/reject
 get_tier(&self, merchant: RistrettoPublicKeyBytes) -> String
 get_merchant_info(&self, merchant: RistrettoPublicKeyBytes) -> (Amount, String, bool)
+get_min_stake(&self) -> Amount                                          // so callers can show real tier thresholds instead of hardcoding them
 ```
 
 ### `contracts/storefront`
 
 One-off product sales with ordinary, fully visible order records. A registered merchant lists a
-product at a fixed price; anyone can buy it; every purchase becomes an `OrderPlaced` event carrying
-the product, the buyer, the amount, and a running order number, so a merchant can reconstruct their
-full order history and per-product revenue straight from the chain.
+product at a fixed price; anyone can buy it, as long as the merchant is still registered — `buy`
+re-checks `merchant_registry.is_registered()` every time, so a merchant who calls `request_exit`
+can no longer sell, even on products they listed while still registered. Every purchase becomes an
+`OrderPlaced` event carrying the product, the buyer, the amount, and a running order number, so a
+merchant can reconstruct their full order history and per-product revenue straight from the chain.
 
 ```rust
 new(registry: ComponentAddress) -> Component<Self>
 create_product(&mut self, merchant: RistrettoPublicKeyBytes, name: String, price: Amount, resource: ResourceAddress) -> u32
-buy(&mut self, product_id: u32, payment: Bucket) -> u32   // returns this order's number; emits OrderPlaced{product_id, merchant, buyer, amount, order_number}
+buy(&mut self, product_id: u32, payment: Bucket) -> u32   // rejected if the merchant is no longer registered; returns this order's number; emits OrderPlaced{product_id, merchant, buyer, amount, order_number}
 get_product_info(&self, product_id: u32) -> (Amount /*price*/, u32 /*order_count*/, Amount /*revenue*/)
 claim_revenue(&mut self, product_id: u32) -> Bucket   // caller must be the product's merchant
 ```
@@ -101,16 +110,19 @@ claim_revenue(&mut self, product_id: u32) -> Bucket   // caller must be the prod
 ### `contracts/subscription`
 
 Recurring payments. A registered merchant creates a plan at a fixed price; a customer subscribes
-under their own account and renews from the same account each billing period. There's no on-chain
-wall-clock, so billing periods advance permissionlessly via `advance_period`, typically called by
-the merchant once per billing cycle (e.g. a monthly cron).
+under their own account and renews from the same account each billing period. Both `subscribe` and
+`renew` re-check `merchant_registry.is_registered()` on every call, so a merchant who calls
+`request_exit` can no longer collect on plans they created while still registered — neither new
+subscriptions nor renewals of existing ones. There's no on-chain wall-clock, so billing periods
+advance permissionlessly via `advance_period`, typically called by the merchant once per billing
+cycle (e.g. a monthly cron).
 
 ```rust
 new(registry: ComponentAddress) -> Component<Self>
 create_plan(&mut self, merchant: RistrettoPublicKeyBytes, name: String, price: Amount, resource: ResourceAddress) -> u32
 advance_period(&mut self, plan_id: u32)
-subscribe(&mut self, plan_id: u32, payment: Bucket) -> Bucket   // first time; subscriber = caller's account; returns a membership badge
-renew(&mut self, plan_id: u32, payment: Bucket)                  // subsequent periods; must be called by the same account that subscribed
+subscribe(&mut self, plan_id: u32, payment: Bucket) -> Bucket   // rejected if the merchant is no longer registered; first time; subscriber = caller's account; returns a membership badge
+renew(&mut self, plan_id: u32, payment: Bucket)                  // rejected if the merchant is no longer registered; subsequent periods; must be called by the same account that subscribed
 is_active(&self, plan_id: u32, subscriber: RistrettoPublicKeyBytes) -> bool
 claim_plan_revenue(&mut self, plan_id: u32) -> Bucket   // caller must be the plan's merchant
 ```
@@ -120,6 +132,13 @@ claim_plan_revenue(&mut self, plan_id: u32) -> Bucket   // caller must be the pl
 Deployed and exercised for real on the Tari Ootle **esme** testnet (via a local
 `tari_ootle_walletd --network esme`, connected to the hosted indexer at
 `https://ootle-indexer-a.tari.com/` — no self-run validator network needed).
+
+> **Status note:** `cancel_exit_request`, `reject_exit`, `get_min_stake`, and the
+> `is_registered` check now inside `storefront.buy`/`subscription.subscribe`/`renew` are
+> code-complete and covered by the test suite below, but not yet redeployed to the addresses
+> listed here — the esme testnet's shared faucet is currently empty, and republishing/
+> reinstantiating costs real (if worthless) tTARI in fees. The addresses and transactions below
+> still reflect the deployment from before this change.
 
 **Published templates:**
 
@@ -173,18 +192,24 @@ event, not a real historical timestamp — documented in the app's own UI, not s
 contracts against the deployed components above:
 
 - **`index.html`** — overview and links to the other pages.
-- **`merchant.html`** — the merchant console: register/stake, create products and subscription
-  plans (names go into the `ProductCreated`/`PlanCreated` events, so anyone reading the chain sees
-  them — nothing merchant-identifying is kept off-chain), and a dashboard of orders and revenue
-  (today / this month / all-time) sourced from the public indexer's event log.
+- **`merchant.html`** — the merchant console: register/stake (with the real Basic/Standard/Premium
+  thresholds shown, read from `get_min_stake` rather than hardcoded), create products and
+  subscription plans (names go into the `ProductCreated`/`PlanCreated` events, so anyone reading the
+  chain sees them — nothing merchant-identifying is kept off-chain), request or cancel an exit
+  (with your current status — active, or exit requested and pending owner review — always visible),
+  and a dashboard of orders and revenue (today / this month / all-time) sourced from the public
+  indexer's event log.
 - **`pay.html`** — the customer-facing storefront. `pay.html?id=<merchant public key>` loads that
   merchant's shop directly (products and plans read straight from the chain, price shown read-only,
-  nothing to type); with no `id` it lists every active registered merchant to browse instead. Can
-  buy/subscribe as any account in the connected wallet, not just its default one.
+  nothing to type, merchant's stake and tier shown up front, a warning if they've requested exit);
+  with no `id` it lists every active registered merchant (stake and tier included) to browse
+  instead. Can buy/subscribe as any account in the connected wallet, not just its default one.
 - **`admin.html`** — owner-only registry dashboard: who's registered, their stake and tier, and the
-  owner-gated actions (`slash`, `finalize_exit`, `withdraw_treasury`). Connecting a wallet that isn't
-  the registry's owner still shows the same read-only stats (they're public — anyone querying the
-  indexer sees the same thing) but the owner-gated actions will be rejected on-chain.
+  owner-gated actions. Merchants with a pending exit request get an Approve (`finalize_exit`,
+  returns their stake) or Deny (`reject_exit`, confiscates it — a reason is required and recorded
+  on-chain) choice, plus `slash`/`withdraw_treasury`. Connecting a wallet that isn't the registry's
+  owner still shows the same read-only stats (they're public — anyone querying the indexer sees the
+  same thing) but the owner-gated actions will be rejected on-chain.
 
 To run it:
 
@@ -211,22 +236,26 @@ example templates use) — not mocks.
 ```
 $ cargo +1.97 test -p tari_engine --test merchant_registry --test subscription --test storefront
 
-running 5 tests (merchant_registry.rs)
-test result: ok. 5 passed; 0 failed
+running 10 tests (merchant_registry.rs)
+test result: ok. 10 passed; 0 failed
 
-running 6 tests (storefront.rs)
+running 7 tests (storefront.rs)
+test result: ok. 7 passed; 0 failed
+
+running 6 tests (subscription.rs)
 test result: ok. 6 passed; 0 failed
-
-running 4 tests (subscription.rs)
-test result: ok. 4 passed; 0 failed
 ```
 
 Covered: registration + badge minting + tier calculation, stake-too-low rejection, tier upgrades on
-added stake, exit + stake return, slashing; buying a product from an unregistered merchant rejected,
-wrong payment amount/resource rejected, buying twice accumulates `order_count` and revenue and
-records each buyer, `claim_revenue` restricted to the product's merchant and drains the vault;
-wrong-amount subscription rejected, activity flips correctly across `advance_period`, and renewing
-from a different account than the one that subscribed is rejected.
+added stake, `get_min_stake` reflects the deployer's chosen minimum, exit + stake return,
+cancelling a pending exit request (and rejecting a cancel with no pending request), `reject_exit`
+confiscating the full stake with the reason recorded on-chain (and rejecting a reject on a still-active
+merchant), slashing; buying a product from an unregistered merchant rejected, wrong payment
+amount/resource rejected, buying twice accumulates `order_count` and revenue and records each buyer,
+`claim_revenue` restricted to the product's merchant and drains the vault, buying after the merchant
+requests exit is rejected; wrong-amount subscription rejected, activity flips correctly across
+`advance_period`, renewing from a different account than the one that subscribed is rejected, and
+both subscribing and renewing after the merchant requests exit are rejected.
 
 ### Reproducing the tests yourself
 

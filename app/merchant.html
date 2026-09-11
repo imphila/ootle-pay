@@ -183,8 +183,9 @@
 
     <div class="card">
       <div class="card-head"><h2>Register &amp; stake</h2></div>
-      <p class="card-note">Public and slashable — your tier (Basic / Standard / Premium) is a
-        multiple of the minimum stake, visible to anyone deciding whether to buy from you.</p>
+      <p class="card-note">Public and slashable — your tier is a multiple of the minimum stake,
+        visible to anyone deciding whether to buy from you.</p>
+      <p class="card-note" id="tierThresholds">Basic / Standard / Premium thresholds: loading…</p>
       <div class="row">
         <div><label for="stakeAmount">Amount (XTR)</label><input id="stakeAmount" value="1000" /></div>
       </div>
@@ -194,6 +195,15 @@
       </div>
       <div id="registerStatus" class="status"></div>
       <div id="registerLog" class="log" style="display:none"></div>
+
+      <div id="exitSection" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border); display:none">
+        <div id="exitStatusLine" class="card-note" style="margin:0 0 10px"></div>
+        <div class="row">
+          <button id="requestExitBtn" class="secondary">Request exit</button>
+          <button id="cancelExitBtn" class="secondary" style="display:none">Cancel exit request</button>
+        </div>
+        <div id="exitStatus" class="status"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -377,6 +387,7 @@
       await refreshBalance();
       await refreshMerchantStatus();
       await refreshDashboard();
+      refreshTierThresholds();
     } catch (err) {
       setStatus(statusEl, "Failed: " + err.message, "err");
       btn.disabled = false;
@@ -391,14 +402,70 @@
     } catch { document.getElementById("statBalance").textContent = "—"; }
   }
 
+  async function refreshTierThresholds() {
+    const el = document.getElementById("tierThresholds");
+    try {
+      const minRaw = await dryRun(`fn main() {\n    let registry = var!["registry"];\n    registry.get_min_stake();\n}`, { registry: REGISTRY });
+      const minStake = Number(readScalar(minRaw));
+      el.textContent = `Basic ≥ ${fmtTari(minStake)} · Standard ≥ ${fmtTari(minStake * 5)} · Premium ≥ ${fmtTari(minStake * 20)}`;
+    } catch { el.textContent = "Basic / Standard / Premium thresholds: unavailable"; }
+  }
+
   async function refreshMerchantStatus() {
     const pill = document.getElementById("tierPill");
+    const exitSection = document.getElementById("exitSection");
+    const exitStatusLine = document.getElementById("exitStatusLine");
+    const requestExitBtn = document.getElementById("requestExitBtn");
+    const cancelExitBtn = document.getElementById("cancelExitBtn");
     try {
-      const tierRaw = await dryRun(`fn main() {\n    let registry = var!["registry"];\n    registry.get_tier(PublicKey("${accountPublicKey}"));\n}`, { registry: REGISTRY });
-      const tier = readScalar(tierRaw);
-      pill.textContent = tier ? `${tier} tier` : "not registered";
-    } catch { pill.textContent = "not registered"; }
+      const infoRaw = await dryRun(`fn main() {\n    let registry = var!["registry"];\n    registry.get_merchant_info(PublicKey("${accountPublicKey}"));\n}`, { registry: REGISTRY });
+      const info = readScalar(infoRaw);
+      if (!info) throw new Error("not registered");
+      const [staked, tier, active] = info;
+      pill.textContent = active ? `${tier} tier` : `${tier} tier — exit requested`;
+      exitSection.style.display = "block";
+      if (active) {
+        exitStatusLine.textContent = `Active — staked ${fmtTari(staked)}.`;
+        requestExitBtn.style.display = "";
+        cancelExitBtn.style.display = "none";
+      } else {
+        exitStatusLine.textContent = `Exit requested — staked ${fmtTari(staked)} is on hold until the registry owner approves (returns your stake) or denies (confiscates it) your exit.`;
+        requestExitBtn.style.display = "none";
+        cancelExitBtn.style.display = "";
+      }
+    } catch {
+      pill.textContent = "not registered";
+      exitSection.style.display = "none";
+    }
   }
+
+  document.getElementById("requestExitBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("exitStatus");
+    setStatus(statusEl, "Requesting exit…", "pending");
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    registry.request_exit();\n}`,
+        { registry: REGISTRY }
+      );
+      const failure = extractFailureReason(result);
+      setStatus(statusEl, failure ? "Rejected: " + failure : "Exit requested.", failure ? "err" : "ok");
+      refreshMerchantStatus();
+    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+  });
+
+  document.getElementById("cancelExitBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("exitStatus");
+    setStatus(statusEl, "Cancelling…", "pending");
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    registry.cancel_exit_request();\n}`,
+        { registry: REGISTRY }
+      );
+      const failure = extractFailureReason(result);
+      setStatus(statusEl, failure ? "Rejected: " + failure : "Exit request cancelled — you're active again.", failure ? "err" : "ok");
+      refreshMerchantStatus();
+    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+  });
 
   // ── Register / stake ────────────────────────────────────────────────────
   document.getElementById("registerBtn").addEventListener("click", async () => {

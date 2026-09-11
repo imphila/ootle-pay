@@ -88,6 +88,15 @@ fn register_mints_a_badge_and_assigns_basic_tier() {
 }
 
 #[test]
+fn get_min_stake_returns_the_deployer_chosen_minimum() {
+    let (mut test, registry) = setup();
+    assert_eq!(
+        test.call_method::<Amount>(registry, "get_min_stake", args![], vec![]),
+        Amount::from(MIN_STAKE)
+    );
+}
+
+#[test]
 fn stake_below_minimum_is_rejected() {
     let (mut test, registry) = setup();
     let (merchant, _proof, merchant_secret) = test.create_funded_account();
@@ -155,6 +164,107 @@ fn request_exit_then_finalize_returns_the_stake() {
     );
     let balance_after = test.call_method::<Amount>(merchant, "balance", args![TARI_TOKEN], vec![]);
     assert_eq!(balance_after, balance_before + Amount::from(MIN_STAKE));
+}
+
+#[test]
+fn cancel_exit_request_resumes_active_status() {
+    let (mut test, registry) = setup();
+    let (merchant, proof, merchant_secret) = test.create_funded_account();
+    let merchant_pk: RistrettoPublicKeyBytes = proof.to_public_key().unwrap();
+    register(&mut test, registry, merchant, &merchant_secret, MIN_STAKE);
+
+    test.execute_expect_success(
+        test.transaction()
+            .call_method(registry, "request_exit", args![])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+    assert!(!test.call_method::<bool>(registry, "is_registered", args![merchant_pk], vec![]));
+
+    test.execute_expect_success(
+        test.transaction()
+            .call_method(registry, "cancel_exit_request", args![])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+    assert!(test.call_method::<bool>(registry, "is_registered", args![merchant_pk], vec![]));
+
+    // Their stake was never touched by the request/cancel round trip.
+    let (staked, _, active) =
+        test.call_method::<(Amount, String, bool)>(registry, "get_merchant_info", args![merchant_pk], vec![]);
+    assert_eq!(staked, Amount::from(MIN_STAKE));
+    assert!(active);
+}
+
+#[test]
+fn cancel_exit_request_without_a_pending_request_is_rejected() {
+    let (mut test, registry) = setup();
+    let (merchant, _proof, merchant_secret) = test.create_funded_account();
+    register(&mut test, registry, merchant, &merchant_secret, MIN_STAKE);
+
+    let reason = test.execute_expect_failure(
+        test.transaction()
+            .call_method(registry, "cancel_exit_request", args![])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+    assert_reject_reason(reason, "No pending exit request to cancel");
+}
+
+#[test]
+fn reject_exit_confiscates_the_full_stake_and_removes_the_merchant() {
+    let (mut test, registry) = setup();
+    let (merchant, proof, merchant_secret) = test.create_funded_account();
+    let merchant_pk: RistrettoPublicKeyBytes = proof.to_public_key().unwrap();
+
+    register(&mut test, registry, merchant, &merchant_secret, MIN_STAKE);
+    test.execute_expect_success(
+        test.transaction()
+            .call_method(registry, "request_exit", args![])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+
+    let treasury_before = test.call_method::<Amount>(registry, "treasury_balance", args![], vec![]);
+    let result = test.execute_expect_success(
+        test.transaction()
+            .call_method(registry, "reject_exit", args![merchant_pk, "Confirmed dispute: undelivered orders".to_string()])
+            .build_and_seal(test.secret_key()),
+        vec![],
+    );
+
+    let treasury_after = test.call_method::<Amount>(registry, "treasury_balance", args![], vec![]);
+    assert_eq!(treasury_after, treasury_before + Amount::from(MIN_STAKE));
+
+    // The merchant is gone entirely, not just inactive - is_registered/get_merchant_info both treat
+    // them as never having existed.
+    assert!(!test.call_method::<bool>(registry, "is_registered", args![merchant_pk], vec![]));
+
+    let event = result
+        .finalize
+        .events
+        .iter()
+        .find(|e| e.topic() == "MerchantRegistry.MerchantExitRejected")
+        .expect("MerchantExitRejected event not found");
+    assert_eq!(event.get_payload("merchant").unwrap(), merchant_pk.to_string());
+    assert_eq!(event.get_payload("confiscated").unwrap(), MIN_STAKE.to_string());
+    assert_eq!(event.get_payload("reason").unwrap(), "Confirmed dispute: undelivered orders");
+}
+
+#[test]
+fn reject_exit_on_a_still_active_merchant_is_rejected() {
+    let (mut test, registry) = setup();
+    let (merchant, proof, merchant_secret) = test.create_funded_account();
+    let merchant_pk: RistrettoPublicKeyBytes = proof.to_public_key().unwrap();
+    register(&mut test, registry, merchant, &merchant_secret, MIN_STAKE);
+
+    let reason = test.execute_expect_failure(
+        test.transaction()
+            .call_method(registry, "reject_exit", args![merchant_pk, "no reason".to_string()])
+            .build_and_seal(test.secret_key()),
+        vec![],
+    );
+    assert_reject_reason(reason, "Merchant has not requested exit");
 }
 
 #[test]

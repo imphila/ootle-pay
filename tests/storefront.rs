@@ -1,6 +1,7 @@
 //   Copyright 2026
 //   SPDX-License-Identifier: BSD-3-Clause
 
+use tari_crypto::ristretto::RistrettoSecretKey;
 use tari_ootle_transaction::args;
 use tari_template_lib::types::{Amount, ComponentAddress, constants::TARI_TOKEN, crypto::RistrettoPublicKeyBytes};
 use tari_template_test_tooling::{TemplateTest, support::assert_error::assert_reject_reason};
@@ -53,7 +54,7 @@ fn setup() -> Setup {
     }
 }
 
-fn register_merchant(setup: &mut Setup) -> RistrettoPublicKeyBytes {
+fn register_merchant(setup: &mut Setup) -> (ComponentAddress, RistrettoSecretKey, RistrettoPublicKeyBytes) {
     let (merchant, proof, merchant_secret) = setup.test.create_funded_account();
     let merchant_pk = proof.to_public_key().unwrap();
     setup.test.execute_expect_success(
@@ -68,7 +69,7 @@ fn register_merchant(setup: &mut Setup) -> RistrettoPublicKeyBytes {
             .build_and_seal(&merchant_secret),
         vec![],
     );
-    merchant_pk
+    (merchant, merchant_secret, merchant_pk)
 }
 
 fn create_product(setup: &mut Setup, merchant_pk: RistrettoPublicKeyBytes) -> u32 {
@@ -134,7 +135,7 @@ fn creating_a_product_for_an_unregistered_merchant_is_rejected() {
 #[test]
 fn registered_merchants_product_can_be_created_and_bought() {
     let mut setup = setup();
-    let merchant_pk = register_merchant(&mut setup);
+    let (_, _, merchant_pk) = register_merchant(&mut setup);
     let product_id = create_product(&mut setup, merchant_pk);
 
     buy(&mut setup, product_id, PRICE);
@@ -151,7 +152,7 @@ fn registered_merchants_product_can_be_created_and_bought() {
 #[test]
 fn wrong_payment_amount_is_rejected() {
     let mut setup = setup();
-    let merchant_pk = register_merchant(&mut setup);
+    let (_, _, merchant_pk) = register_merchant(&mut setup);
     let product_id = create_product(&mut setup, merchant_pk);
 
     let reason = buy_expect_failure(&mut setup, product_id, PRICE - 1);
@@ -164,7 +165,7 @@ fn wrong_payment_amount_is_rejected() {
 #[test]
 fn buying_twice_from_different_accounts_accumulates_order_count_and_revenue_and_records_each_buyer() {
     let mut setup = setup();
-    let merchant_pk = register_merchant(&mut setup);
+    let (_, _, merchant_pk) = register_merchant(&mut setup);
     let product_id = create_product(&mut setup, merchant_pk);
 
     // Two purchases, from two different accounts - each order should record its own buyer.
@@ -204,9 +205,34 @@ fn buying_twice_from_different_accounts_accumulates_order_count_and_revenue_and_
 }
 
 #[test]
+fn buying_after_the_merchant_requests_exit_is_rejected() {
+    let mut setup = setup();
+    let (_merchant_account, merchant_secret, merchant_pk) = register_merchant(&mut setup);
+    let product_id = create_product(&mut setup, merchant_pk);
+
+    // Sanity check: the product is sellable before the merchant requests exit.
+    buy(&mut setup, product_id, PRICE);
+
+    setup.test.execute_expect_success(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.registry, "request_exit", args![])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+
+    let reason = buy_expect_failure(&mut setup, product_id, PRICE);
+    assert!(
+        reason.contains("Merchant is no longer registered"),
+        "unexpected reject reason: {reason}"
+    );
+}
+
+#[test]
 fn claim_revenue_by_a_non_merchant_is_rejected() {
     let mut setup = setup();
-    let merchant_pk = register_merchant(&mut setup);
+    let (_, _, merchant_pk) = register_merchant(&mut setup);
     let product_id = create_product(&mut setup, merchant_pk);
     buy(&mut setup, product_id, PRICE);
 

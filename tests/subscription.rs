@@ -181,6 +181,62 @@ fn same_account_renews_across_periods_and_other_accounts_stay_unaffected() {
 }
 
 #[test]
+fn subscribing_after_the_merchant_requests_exit_is_rejected() {
+    let (mut test, registry, subs) = setup();
+    let (merchant, merchant_proof, merchant_secret) = test.create_funded_account();
+    let merchant_pk = merchant_proof.to_public_key().unwrap();
+    register_merchant(&mut test, registry, merchant, &merchant_secret);
+    let plan_id = create_plan(&mut test, subs, merchant_pk);
+
+    test.execute_expect_success(
+        test.transaction()
+            .call_method(registry, "request_exit", args![])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+
+    let (payer, _proof, payer_secret) = test.create_funded_account();
+    let reason = test.execute_expect_failure(
+        test.transaction()
+            .call_method(payer, "withdraw", args![TARI_TOKEN, Amount::from(PRICE)])
+            .put_last_instruction_output_on_workspace("payment")
+            .call_method(subs, "subscribe", args![plan_id, Workspace("payment")])
+            .build_and_seal(&payer_secret),
+        vec![],
+    );
+    assert_reject_reason(reason, "Merchant is no longer registered");
+}
+
+#[test]
+fn renewing_after_the_merchant_requests_exit_is_rejected() {
+    let (mut test, registry, subs) = setup();
+    let (merchant, merchant_proof, merchant_secret) = test.create_funded_account();
+    let merchant_pk = merchant_proof.to_public_key().unwrap();
+    register_merchant(&mut test, registry, merchant, &merchant_secret);
+    let plan_id = create_plan(&mut test, subs, merchant_pk);
+
+    let (payer, _proof, payer_secret) = test.create_funded_account();
+    subscribe(&mut test, subs, plan_id, payer, &payer_secret);
+
+    test.execute_expect_success(
+        test.transaction()
+            .call_method(registry, "request_exit", args![])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+
+    let reason = test.execute_expect_failure(
+        test.transaction()
+            .call_method(payer, "withdraw", args![TARI_TOKEN, Amount::from(PRICE)])
+            .put_last_instruction_output_on_workspace("payment")
+            .call_method(subs, "renew", args![plan_id, Workspace("payment")])
+            .build_and_seal(&payer_secret),
+        vec![],
+    );
+    assert_reject_reason(reason, "Merchant is no longer registered");
+}
+
+#[test]
 fn renewing_from_a_different_account_is_rejected() {
     let (mut test, registry, subs) = setup();
     let (merchant, merchant_proof, merchant_secret) = test.create_funded_account();

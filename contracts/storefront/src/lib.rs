@@ -85,9 +85,16 @@ mod storefront_template {
         /// Buys `product_id`. `payment` must be exactly the product's price in its resource.
         /// Returns this order's number (i.e. `order_count` after this purchase).
         ///
-        /// Callable by: anyone. Records the buyer's public key as part of the order.
+        /// Callable by: anyone, as long as the product's merchant is still registered - a merchant
+        /// who has called `request_exit` (or been fully exited/rejected) can no longer sell, even on
+        /// products they listed while still registered.
+        /// Records the buyer's public key as part of the order.
         pub fn buy(&mut self, product_id: u32, payment: Bucket) -> u32 {
             let buyer = CallerContext::transaction_signer_public_key();
+            let merchant = self.products.get(&product_id).expect("Unknown product").merchant;
+            let is_registered: bool = self.registry.call("is_registered", args![merchant]);
+            assert!(is_registered, "Merchant is no longer registered");
+
             let product = self.products.get_mut(&product_id).expect("Unknown product");
             assert_eq!(payment.resource_address(), product.resource, "Wrong payment resource");
             assert_eq!(payment.amount(), product.price, "Payment must equal the product price exactly");

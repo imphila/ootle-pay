@@ -166,8 +166,12 @@
       <button id="backToBrowse" class="ghost" type="button">← All merchants</button>
       <div class="shop-head">
         <div class="who">Shop <span id="shopMerchantPk" class="mono"></span></div>
-        <span class="badge" id="shopTier"></span>
+        <span>
+          <span class="badge" id="shopTier"></span>
+          <span class="badge" id="shopStake"></span>
+        </span>
       </div>
+      <div id="shopExitWarning" class="callout" style="display:none; border-color:var(--err); color:var(--err)"></div>
 
       <div class="section">
         <h2>Products</h2>
@@ -354,13 +358,13 @@
       const merchants = merchantKeys
         .map((pk, i) => ({ pk, info: infos[i] }))
         .filter(({ info }) => info && info[2]) // info[2] = active; skip merchants who exited
-        .map(({ pk, info }) => ({ pk, tier: info[1] }));
+        .map(({ pk, info }) => ({ pk, staked: info[0], tier: info[1] }));
       listEl.innerHTML = "";
       if (merchants.length === 0) { emptyEl.style.display = "block"; return; }
       for (const m of merchants) {
         const row = document.createElement("div");
         row.className = "merchant-row";
-        row.innerHTML = `<span class="mono">${short(m.pk)}</span><span class="badge active">${m.tier}</span>`;
+        row.innerHTML = `<span class="mono">${short(m.pk)}</span><span><span class="badge active">${m.tier}</span> <span class="badge">${fmtTari(m.staked)}</span></span>`;
         row.addEventListener("click", () => { location.href = `pay.html?id=${m.pk}`; });
         listEl.appendChild(row);
       }
@@ -375,6 +379,8 @@
     document.getElementById("shopView").style.display = "block";
     document.getElementById("shopMerchantPk").textContent = short(merchantId);
     document.getElementById("shopTier").textContent = "";
+    document.getElementById("shopStake").textContent = "";
+    document.getElementById("shopExitWarning").style.display = "none";
 
     const productListEl = document.getElementById("productList");
     const productEmptyEl = document.getElementById("productListEmpty");
@@ -392,7 +398,16 @@
       fetchEvents(STOREFRONT),
       fetchEvents(SUBSCRIPTION),
     ]);
-    if (tierInfo) document.getElementById("shopTier").textContent = tierInfo[1] + " tier";
+    if (tierInfo) {
+      const [staked, tier, active] = tierInfo;
+      document.getElementById("shopTier").textContent = tier + " tier";
+      document.getElementById("shopStake").textContent = fmtTari(staked) + " staked";
+      if (!active) {
+        const warn = document.getElementById("shopExitWarning");
+        warn.textContent = "⚠ This merchant has requested to exit the registry. Existing listings are shown for reference, but new purchases will be rejected on-chain.";
+        warn.style.display = "block";
+      }
+    }
 
     const products = storeEvents
       .filter((e) => e.topic === "Storefront.ProductCreated" && e.payload.merchant === merchantId)

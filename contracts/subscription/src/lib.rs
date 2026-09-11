@@ -162,8 +162,15 @@ mod subscription_template {
         }
 
         /// Validates and deposits `payment` into `plan_id`'s revenue vault, returning the period it
-        /// pays up to (the plan's current period plus one).
+        /// pays up to (the plan's current period plus one). Used by both `subscribe` and `renew` -
+        /// checking the merchant's registration here means a merchant who has called `request_exit`
+        /// (or been fully exited/rejected) can no longer collect on plans they created while still
+        /// registered, whether that's a first subscription or a renewal.
         fn pay_into_plan(&mut self, plan_id: u32, payment: Bucket) -> u32 {
+            let merchant = self.plans.get(&plan_id).expect("Unknown plan").merchant;
+            let is_registered: bool = self.registry.call("is_registered", args![merchant]);
+            assert!(is_registered, "Merchant is no longer registered");
+
             let plan = self.plans.get_mut(&plan_id).expect("Unknown plan");
             assert_eq!(payment.resource_address(), plan.resource, "Wrong payment resource");
             assert_eq!(payment.amount(), plan.price, "Payment must equal the plan price exactly");

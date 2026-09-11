@@ -170,7 +170,7 @@
         <code>get_merchant_info</code> — not a database, just what's actually on-chain right now.</p>
       <div class="overflow">
         <table class="data" id="merchantsTable" style="display:none">
-          <thead><tr><th>Merchant</th><th>Tier</th><th>Staked</th><th>Status</th><th>Finalize exit</th><th>Slash</th></tr></thead>
+          <thead><tr><th>Merchant</th><th>Tier</th><th>Staked</th><th>Status</th><th>Exit request</th><th>Slash</th></tr></thead>
           <tbody id="merchantsTbody"></tbody>
         </table>
       </div>
@@ -338,7 +338,10 @@
         <td>${r.tier}</td>
         <td>${fmtTari(r.staked)}</td>
         <td><span class="pill ${r.active ? "active" : "inactive"}">${r.active ? "active" : "exit requested"}</span></td>
-        <td>${r.active ? "—" : `<div class="actions"><input class="slash-amt" data-finalize-account="${r.pk}" placeholder="account_..." /><button class="ghost" data-finalize="${r.pk}">Finalize</button></div>`}</td>
+        <td>${r.active ? "—" : `
+          <div class="actions"><input class="slash-amt" data-finalize-account="${r.pk}" placeholder="account_..." /><button class="ghost" data-finalize="${r.pk}">Approve</button></div>
+          <div class="actions" style="margin-top:6px"><input class="slash-amt" data-deny-reason="${r.pk}" placeholder="reason for denying..." style="width:150px" /><button class="ghost" data-deny="${r.pk}">Deny</button></div>
+        `}</td>
         <td><div class="actions"><input class="slash-amt" type="number" value="${Math.min(100, r.staked / 1_000_000)}" data-slash-amt="${r.pk}" /><button class="ghost" data-slash="${r.pk}">Slash</button></div></td>
       `;
       tbody.appendChild(tr);
@@ -353,6 +356,12 @@
       const acct = table.querySelector(`[data-finalize-account="${pk}"]`).value.trim();
       if (!acct) { alert("Enter the merchant's account address to receive the refund."); return; }
       finalizeExit(pk, acct);
+    }));
+    table.querySelectorAll("[data-deny]").forEach((btn) => btn.addEventListener("click", () => {
+      const pk = btn.dataset.deny;
+      const reason = table.querySelector(`[data-deny-reason="${pk}"]`).value.trim();
+      if (!reason) { alert("Enter a reason - it's recorded on-chain along with the denial."); return; }
+      denyExit(pk, reason);
     }));
   }
 
@@ -370,6 +379,7 @@
   }
 
   async function finalizeExit(pk, merchantAccount) {
+    if (!confirm(`Approve ${short(pk)}'s exit and return their full stake? This cannot be undone.`)) return;
     try {
       const result = await submitManifestAndWait(
         `fn main() {\n    let registry = var!["registry"];\n    let merchant_account = var!["merchant_account"];\n    let refund = registry.finalize_exit(PublicKey("${pk}"));\n    merchant_account.deposit(refund);\n}`,
@@ -377,6 +387,19 @@
       );
       const failure = extractFailureReason(result);
       alert(failure ? "Rejected: " + failure : (eventsSummary(result) || "Finalized."));
+      refreshAll();
+    } catch (err) { alert("Failed: " + err.message); }
+  }
+
+  async function denyExit(pk, reason) {
+    if (!confirm(`Deny ${short(pk)}'s exit request and confiscate their entire stake into the treasury? This cannot be undone.\n\nReason (recorded on-chain): ${reason}`)) return;
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    registry.reject_exit(PublicKey("${pk}"), ${JSON.stringify(reason)});\n}`,
+        { registry: REGISTRY }
+      );
+      const failure = extractFailureReason(result);
+      alert(failure ? "Rejected: " + failure : (eventsSummary(result) || "Exit denied, stake confiscated."));
       refreshAll();
     } catch (err) { alert("Failed: " + err.message); }
   }
