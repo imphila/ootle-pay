@@ -162,7 +162,7 @@
     <div class="dash-head">
       <div>
         <h1>Dashboard</h1>
-        <div class="who">Merchant <span id="accountPk" class="mono"></span></div>
+        <div class="who">Merchant <span id="accountPk" class="mono"></span> <button id="copyPkBtn" class="ghost" type="button" style="margin-left:6px" title="Copy your full merchant public key">Copy ID</button></div>
       </div>
       <span class="tier-pill" id="tierPill">checking…</span>
     </div>
@@ -632,4 +632,16 @@
   document.getElementById("refreshProductsBtn").addEventListener("click", refreshDashboard);
   document.getElementById("refreshPlansBtn").addEventListener("click", refreshDashboard);
   document.getElementById("refreshFeedBtn").addEventListener("click", refreshDashboard);
+
+  document.getElementById("copyPkBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("copyPkBtn");
+    try {
+      await navigator.clipboard.writeText(accountPublicKey);
+      const original = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    } catch (err) {
+      alert("Couldn't copy automatically - your merchant public key is:\n\n" + accountPublicKey);
+    }
+  });
 </script>
