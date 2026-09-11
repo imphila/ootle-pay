@@ -162,7 +162,7 @@
     <div class="dash-head">
       <div>
         <h1>Dashboard</h1>
-        <div class="who">Merchant <span id="accountPk" class="mono"></span> <button id="copyPkBtn" class="ghost" type="button" style="margin-left:6px" title="Copy your full merchant public key">Copy ID</button></div>
+        <div class="who">Merchant <span id="accountPk" class="mono"></span> <button id="copyPkBtn" class="ghost" type="button" style="margin-left:6px" title="Copy your full merchant public key">Copy ID</button> <button id="copyShopLinkBtn" class="ghost" type="button" style="margin-left:2px" title="Copy a link customers can use to shop with you">Copy shop link</button></div>
       </div>
       <span class="tier-pill" id="tierPill">checking…</span>
     </div>
@@ -642,6 +642,19 @@
       setTimeout(() => { btn.textContent = original; }, 1500);
     } catch (err) {
       alert("Couldn't copy automatically - your merchant public key is:\n\n" + accountPublicKey);
+    }
+  });
+
+  document.getElementById("copyShopLinkBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("copyShopLinkBtn");
+    const link = `https://imphila.github.io/ootle-pay/pay.html?id=${accountPublicKey}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      const original = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    } catch (err) {
+      alert("Couldn't copy automatically - your shop link is:\n\n" + link);
     }
   });
 </script>

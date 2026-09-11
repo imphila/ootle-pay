@@ -52,7 +52,7 @@
   nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); }
   nav.top .net .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
 
-  .shell { max-width: 480px; margin: 0 auto; padding: 40px 24px 72px; }
+  .shell { max-width: 560px; margin: 0 auto; padding: 40px 24px 72px; }
 
   h1.page { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.25rem; font-weight: 600; margin: 0 0 20px; text-align: center; }
 
@@ -62,13 +62,6 @@
   }
   .callout b { color: var(--text); }
 
-  .switch { display: flex; border: 1px solid var(--border); border-radius: 7px; padding: 3px; margin-bottom: 20px; }
-  .switch button {
-    flex: 1; background: transparent; border: none; padding: 8px; border-radius: 5px;
-    font-family: "IBM Plex Sans", sans-serif; font-weight: 600; font-size: 0.86rem; color: var(--text-dim); cursor: pointer;
-  }
-  .switch button.active { background: var(--accent); color: var(--accent-ink); }
-
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
 
   label { display: block; font-size: 0.76rem; color: var(--text-dim); margin-top: 12px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
@@ -77,7 +70,6 @@
     border-radius: 6px; padding: 10px 11px; margin-top: 5px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.88rem;
   }
   input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
-  .row { display: flex; gap: 10px; } .row > * { flex: 1; }
 
   button.primary {
     width: 100%; margin-top: 18px; padding: 12px 18px; border-radius: 7px; border: none;
@@ -86,7 +78,17 @@
   }
   button.primary:disabled { opacity: 0.5; cursor: default; }
   button.primary:hover:not(:disabled) { filter: brightness(1.08); }
-  button.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); padding: 9px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-family: "IBM Plex Sans", sans-serif; width: 100%; margin-top: 10px; }
+  button.secondary {
+    background: var(--surface-2); color: var(--text); border: 1px solid var(--border); padding: 8px 14px;
+    border-radius: 6px; font-size: 0.82rem; cursor: pointer; font-family: "IBM Plex Sans", sans-serif; font-weight: 600;
+  }
+  button.secondary:hover { border-color: var(--accent); }
+  button.secondary:disabled { opacity: 0.5; cursor: default; }
+  button.ghost {
+    background: transparent; color: var(--text-dim); border: none; padding: 4px 0;
+    font-size: 0.8rem; cursor: pointer; font-family: "IBM Plex Sans", sans-serif; margin-bottom: 16px;
+  }
+  button.ghost:hover { color: var(--accent); }
 
   .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-family: "IBM Plex Mono", ui-monospace, monospace; margin-top: 14px; padding: 5px 11px; border-radius: 999px; background: var(--surface-2); color: var(--text-dim); }
   .status:empty { display: none; }
@@ -94,11 +96,37 @@
   .status.err { background: var(--err-bg); color: var(--err); }
   .status.pending { background: var(--pending-bg); color: var(--pending); }
 
-  .log { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; margin-top: 12px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.76rem; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto; color: var(--text-dim); }
-
-  #payView, #subView { display: none; }
   #appPanels { display: none; }
-  .balance { text-align: center; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 14px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .balance { text-align: center; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 20px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  .empty-note { font-size: 0.84rem; color: var(--text-dim); padding: 16px 0; text-align: center; }
+
+  .merchant-row {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;
+    margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+  }
+  .merchant-row:hover { border-color: var(--accent); }
+  .merchant-row .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.85rem; }
+
+  .shop-head { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 18px; flex-wrap: wrap; gap: 8px; }
+  .shop-head .who { font-size: 0.86rem; font-weight: 600; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  .section { margin-top: 26px; }
+  .section:first-of-type { margin-top: 0; }
+  .section h2 { font-size: 0.98rem; font-weight: 600; margin: 0 0 10px; }
+
+  .item-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;
+    margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .item-info { display: flex; flex-direction: column; gap: 4px; }
+  .item-name { font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+  .item-price { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.8rem; color: var(--text-dim); }
+  .item-actions { display: flex; align-items: center; gap: 10px; }
+  .item-status { font-size: 0.72rem; color: var(--text-dim); font-family: "IBM Plex Mono", ui-monospace, monospace; text-align: right; max-width: 160px; }
+
+  .badge { font-size: 0.68rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; background: var(--surface-2); color: var(--text-dim); }
+  .badge.active { background: var(--ok-bg); color: var(--ok); }
 </style>
 
 <nav class="top">
@@ -112,7 +140,7 @@
 </nav>
 
 <div class="shell">
-  <h1 class="page">Pay a merchant</h1>
+  <h1 class="page">Pay</h1>
 
   <div id="connectPanel" class="card">
     <label for="daemonUrl">Wallet daemon JSON-RPC URL</label>
@@ -123,49 +151,41 @@
 
   <div id="appPanels">
     <div class="balance" id="walletBalance">—</div>
-    <div class="switch">
-      <button id="tabPay" class="active">Buy a product</button>
-      <button id="tabSub">Subscribe</button>
+
+    <div id="browseView">
+      <div class="callout">Every merchant here staked a bond in <code>merchant_registry</code> to
+        list — pick one to see what they sell, straight from the chain.</div>
+      <div id="merchantList"></div>
+      <div id="merchantListEmpty" class="empty-note" style="display:none">No merchants registered yet.</div>
     </div>
 
-    <div id="payView" class="card">
-      <div class="callout">Money moves straight from your account to the merchant's product
-        revenue vault — no custodian holds it in between.</div>
-      <label for="payMerchant">Merchant public key</label>
-      <input id="payMerchant" placeholder="paste or follow a merchant's payment link" />
-      <label for="payProductId">Product id</label>
-      <input id="payProductId" value="0" />
-      <label for="payPrice">Price (XTR)</label>
-      <input id="payPrice" value="20" />
-      <button id="payBtn" class="primary">Buy</button>
-      <div id="payStatus" class="status"></div>
-      <div id="payLog" class="log" style="display:none"></div>
-    </div>
+    <div id="shopView" style="display:none">
+      <button id="backToBrowse" class="ghost" type="button">← All merchants</button>
+      <div class="shop-head">
+        <div class="who">Shop <span id="shopMerchantPk" class="mono"></span></div>
+        <span class="badge" id="shopTier"></span>
+      </div>
 
-    <div id="subView" class="card">
-      <div class="callout">Renew from the <b>same account</b> you subscribed with each period —
-        that's how the plan recognizes you.</div>
-      <label for="subMerchant">Merchant public key</label>
-      <input id="subMerchant" placeholder="paste or follow a merchant's payment link" />
-      <div class="row">
-        <div><label for="subPlanId">Plan id</label><input id="subPlanId" value="0" /></div>
-        <div><label for="subPrice">Price (XTR)</label><input id="subPrice" value="50" /></div>
+      <div class="section">
+        <h2>Products</h2>
+        <div id="productList"></div>
+        <div id="productListEmpty" class="empty-note" style="display:none">This merchant has no products yet.</div>
       </div>
-      <div class="row">
-        <button id="subscribeBtn" class="primary">Subscribe</button>
-        <button id="renewBtn" class="primary">Renew</button>
+
+      <div class="section">
+        <h2>Subscription plans</h2>
+        <div id="planList"></div>
+        <div id="planListEmpty" class="empty-note" style="display:none">This merchant has no subscription plans yet.</div>
       </div>
-      <button id="checkActiveBtn" class="secondary">Check subscription status</button>
-      <div id="subscribeStatus" class="status"></div>
-      <div id="activeStatus" class="status"></div>
-      <div id="subLog" class="log" style="display:none"></div>
     </div>
   </div>
 </div>
 
 <script>
+  const REGISTRY = "component_07ef58a3d3dbaa9fe6195bd2929c6dac4161e1aa3e2e29cd5bcdb05c7e8b8254";
   const STOREFRONT = "component_72de258522c0fea2c6f5d98449cb1387260d622aace6afc06512e3d83c999060";
   const SUBSCRIPTION = "component_20f6aa88777ca93ad1ed04ec6a6e77c6a1c27b9c5ca252d2130fdd3b7ab19a23";
+  const INDEXER = "https://ootle-indexer-a.tari.com";
 
   let daemonUrl = "", authToken = "", accountAddress = "", accountPublicKey = "", rpcId = 1;
 
@@ -185,6 +205,11 @@
     });
     return rpc("transactions.wait_result", { transaction_id: submitted.transaction_id, timeout_secs: 60 });
   }
+  async function dryRun(manifest, variables) {
+    return rpc("transactions.submit_manifest", {
+      manifest, variables, seal_signer_key_id: null, signing_key_ids: [], max_fee: 100000, dry_run: true, blobs: {},
+    });
+  }
   // Dry-run responses (transactions.submit_manifest with dry_run:true) wrap the finalize
   // object one level deeper (result.result.finalize) than a submitted+awaited transaction
   // (result.result directly) - this normalizes both so every reader works on either shape.
@@ -197,11 +222,6 @@
     const finalize = getFinalize(result);
     if (!finalize || !finalize.execution_results || !finalize.execution_results.length) return null;
     return finalize.execution_results[finalize.execution_results.length - 1].indexed.value;
-  }
-  function eventsSummary(result) {
-    const finalize = getFinalize(result);
-    if (!finalize) return "(no result yet — status: " + (result ? result.status : "?") + ")";
-    return finalize.events.map((e) => `${e.topic} ${JSON.stringify(e.payload)}`).join("\n");
   }
   // Extracts the contract's own panic/reject message so a failed call shows a real reason
   // instead of a vague "submitted, check the log" - null means the transaction fully succeeded.
@@ -225,9 +245,19 @@
     return null;
   }
   function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
-  function showLog(el, text) { el.style.display = "block"; el.textContent = text; }
-  // Amount input fields are in tTARI; the chain wants raw microTARI.
-  function toRaw(tari) { return Math.round(Number(tari) * 1_000_000); }
+  function short(pk) { return pk ? pk.slice(0, 8) + "…" + pk.slice(-6) : ""; }
+  // On-chain Amounts are raw microTARI (divisibility 6, same as the wallet's own balance display).
+  function fmtTari(raw) {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return `${raw} tTARI`;
+    return (n / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 6 }) + " tTARI";
+  }
+
+  async function fetchEvents(substateId) {
+    const res = await fetch(`${INDEXER}/transactions/events?substate_id=${substateId}&limit=500`);
+    const body = await res.json();
+    return (body.events || []).map(([txId, e]) => ({ txId, ...e }));
+  }
 
   async function refreshBalance() {
     const el = document.getElementById("walletBalance");
@@ -239,28 +269,7 @@
     } catch (err) { el.textContent = "Balance unavailable"; }
   }
 
-  // Prefill from a merchant-shared link, e.g. pay.html?merchant=<pk>&product=0&price=20&mode=subscribe&plan=0
   const params = new URLSearchParams(location.search);
-  if (params.get("merchant")) {
-    document.getElementById("payMerchant").value = params.get("merchant");
-    document.getElementById("subMerchant").value = params.get("merchant");
-  }
-  if (params.get("product")) document.getElementById("payProductId").value = params.get("product");
-  if (params.get("plan")) document.getElementById("subPlanId").value = params.get("plan");
-  if (params.get("price")) {
-    document.getElementById("payPrice").value = params.get("price");
-    document.getElementById("subPrice").value = params.get("price");
-  }
-
-  function showTab(tab) {
-    document.getElementById("tabPay").classList.toggle("active", tab === "pay");
-    document.getElementById("tabSub").classList.toggle("active", tab === "sub");
-    document.getElementById("payView").style.display = tab === "pay" ? "block" : "none";
-    document.getElementById("subView").style.display = tab === "sub" ? "block" : "none";
-  }
-  document.getElementById("tabPay").addEventListener("click", () => showTab("pay"));
-  document.getElementById("tabSub").addEventListener("click", () => showTab("sub"));
-  showTab(params.get("mode") === "subscribe" ? "sub" : "pay");
 
   document.getElementById("connectBtn").addEventListener("click", async () => {
     const btn = document.getElementById("connectBtn");
@@ -281,59 +290,185 @@
       document.getElementById("connectPanel").style.display = "none";
       document.getElementById("appPanels").style.display = "block";
       refreshBalance();
+
+      const merchantId = params.get("id");
+      if (merchantId) { showShop(merchantId); } else { showBrowse(); }
     } catch (err) {
       setStatus(statusEl, "Failed: " + err.message, "err");
       btn.disabled = false;
     }
   });
 
-  document.getElementById("payBtn").addEventListener("click", async () => {
-    const statusEl = document.getElementById("payStatus");
-    const logEl = document.getElementById("payLog");
-    const productId = document.getElementById("payProductId").value.trim();
-    const price = document.getElementById("payPrice").value.trim();
-    setStatus(statusEl, "Buying…", "pending");
+  document.getElementById("backToBrowse").addEventListener("click", () => { location.href = "pay.html"; });
+
+  // ── Browse: every active merchant in the registry ───────────────────────
+  async function showBrowse() {
+    document.getElementById("shopView").style.display = "none";
+    document.getElementById("browseView").style.display = "block";
+    const listEl = document.getElementById("merchantList");
+    const emptyEl = document.getElementById("merchantListEmpty");
+    listEl.innerHTML = "Loading…";
+    emptyEl.style.display = "none";
+    try {
+      const events = await fetchEvents(REGISTRY);
+      const registered = events.filter((e) => e.topic === "MerchantRegistry.MerchantRegistered");
+      const merchantKeys = [...new Set(registered.map((e) => e.payload.merchant))];
+      // Fire every merchant's get_merchant_info check in parallel - sequential awaits here
+      // would otherwise add several seconds of dry-run round-trip latency per merchant.
+      const infos = await Promise.all(merchantKeys.map(async (pk) => {
+        try {
+          const infoRaw = await dryRun(`fn main() {\n    let registry = var!["registry"];\n    registry.get_merchant_info(PublicKey("${pk}"));\n}`, { registry: REGISTRY });
+          return readScalar(infoRaw);
+        } catch { return null; } // fully exited (finalize_exit already removed them) - omit
+      }));
+      const merchants = merchantKeys
+        .map((pk, i) => ({ pk, info: infos[i] }))
+        .filter(({ info }) => info && info[2]) // info[2] = active; skip merchants who exited
+        .map(({ pk, info }) => ({ pk, tier: info[1] }));
+      listEl.innerHTML = "";
+      if (merchants.length === 0) { emptyEl.style.display = "block"; return; }
+      for (const m of merchants) {
+        const row = document.createElement("div");
+        row.className = "merchant-row";
+        row.innerHTML = `<span class="mono">${short(m.pk)}</span><span class="badge active">${m.tier}</span>`;
+        row.addEventListener("click", () => { location.href = `pay.html?id=${m.pk}`; });
+        listEl.appendChild(row);
+      }
+    } catch (err) {
+      listEl.textContent = "Failed to load merchants: " + err.message;
+    }
+  }
+
+  // ── Shop: one merchant's products and subscription plans ────────────────
+  async function showShop(merchantId) {
+    document.getElementById("browseView").style.display = "none";
+    document.getElementById("shopView").style.display = "block";
+    document.getElementById("shopMerchantPk").textContent = short(merchantId);
+    document.getElementById("shopTier").textContent = "";
+
+    const productListEl = document.getElementById("productList");
+    const productEmptyEl = document.getElementById("productListEmpty");
+    const planListEl = document.getElementById("planList");
+    const planEmptyEl = document.getElementById("planListEmpty");
+    productListEl.innerHTML = "Loading…";
+    planListEl.innerHTML = "Loading…";
+    productEmptyEl.style.display = "none";
+    planEmptyEl.style.display = "none";
+
+    const [tierInfo, storeEvents, subEvents] = await Promise.all([
+      dryRun(`fn main() {\n    let registry = var!["registry"];\n    registry.get_merchant_info(PublicKey("${merchantId}"));\n}`, { registry: REGISTRY })
+        .then((r) => readScalar(r))
+        .catch(() => null), // not registered - shop can still list events if any exist
+      fetchEvents(STOREFRONT),
+      fetchEvents(SUBSCRIPTION),
+    ]);
+    if (tierInfo) document.getElementById("shopTier").textContent = tierInfo[1] + " tier";
+
+    const products = storeEvents
+      .filter((e) => e.topic === "Storefront.ProductCreated" && e.payload.merchant === merchantId)
+      .map((e) => ({ id: e.payload.product_id, price: e.payload.price }));
+    const plans = subEvents
+      .filter((e) => e.topic === "SubscriptionManager.PlanCreated" && e.payload.merchant === merchantId)
+      .map((e) => ({ id: e.payload.plan_id, price: e.payload.price }));
+
+    productListEl.innerHTML = "";
+    if (products.length === 0) {
+      productEmptyEl.style.display = "block";
+    } else {
+      for (const p of products) {
+        const card = document.createElement("div");
+        card.className = "item-card";
+        card.innerHTML = `
+          <div class="item-info">
+            <div class="item-name">Product #${p.id}</div>
+            <div class="item-price">${fmtTari(p.price)}</div>
+          </div>
+          <div class="item-actions">
+            <div class="item-status" data-status-product="${p.id}"></div>
+            <button class="secondary" data-buy="${p.id}" data-price="${p.price}" type="button">Buy</button>
+          </div>
+        `;
+        productListEl.appendChild(card);
+      }
+      productListEl.querySelectorAll("[data-buy]").forEach((btn) => btn.addEventListener("click", () => buyProduct(btn)));
+    }
+
+    planListEl.innerHTML = "";
+    if (plans.length === 0) {
+      planEmptyEl.style.display = "block";
+    } else {
+      // Fire every plan's is_active check in parallel - sequential awaits here would
+      // otherwise add several seconds of dry-run round-trip latency per plan.
+      const actives = await Promise.all(plans.map(async (plan) => {
+        try {
+          const activeRaw = await dryRun(`fn main() {\n    let subs = var!["subs"];\n    subs.is_active(${plan.id}u32, PublicKey("${accountPublicKey}"));\n}`, { subs: SUBSCRIPTION });
+          return !!readScalar(activeRaw);
+        } catch { return false; }
+      }));
+      for (let i = 0; i < plans.length; i++) {
+        const plan = plans[i];
+        const active = actives[i];
+        const card = document.createElement("div");
+        card.className = "item-card";
+        card.innerHTML = `
+          <div class="item-info">
+            <div class="item-name">Plan #${plan.id} <span class="badge ${active ? "active" : ""}">${active ? "Active" : "Not subscribed"}</span></div>
+            <div class="item-price">${fmtTari(plan.price)} / period</div>
+          </div>
+          <div class="item-actions">
+            <div class="item-status" data-status-plan="${plan.id}"></div>
+            <button class="secondary" data-sub="${plan.id}" data-price="${plan.price}" data-active="${active}" type="button">${active ? "Renew" : "Subscribe"}</button>
+          </div>
+        `;
+        planListEl.appendChild(card);
+      }
+      planListEl.querySelectorAll("[data-sub]").forEach((btn) => btn.addEventListener("click", () => doSubscribeOrRenew(btn)));
+    }
+  }
+
+  async function buyProduct(btn) {
+    const productId = btn.dataset.buy;
+    const price = btn.dataset.price;
+    const statusEl = document.querySelector(`[data-status-product="${productId}"]`);
+    btn.disabled = true;
+    statusEl.textContent = "Buying…";
     try {
       const result = await submitManifestAndWait(
-        `fn main() {\n    let store = var!["store"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${toRaw(price)}u64);\n    store.buy(${productId}u32, payment);\n}`,
+        `fn main() {\n    let store = var!["store"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${price}u64);\n    store.buy(${productId}u32, payment);\n}`,
         { store: STOREFRONT, account: accountAddress }
       );
-      showLog(logEl, eventsSummary(result));
       const failure = extractFailureReason(result);
-      setStatus(statusEl, failure ? "Rejected: " + failure : "Order placed!", failure ? "err" : "ok");
+      statusEl.textContent = failure ? "Rejected: " + failure : "Order placed!";
       refreshBalance();
-    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
-  });
+    } catch (err) { statusEl.textContent = "Failed: " + err.message; }
+    btn.disabled = false;
+  }
 
-  async function doSubscribe(method) {
-    const statusEl = document.getElementById("subscribeStatus");
-    const logEl = document.getElementById("subLog");
-    const planId = document.getElementById("subPlanId").value.trim();
-    const price = document.getElementById("subPrice").value.trim();
-    setStatus(statusEl, method === "subscribe" ? "Subscribing…" : "Renewing…", "pending");
+  async function doSubscribeOrRenew(btn) {
+    const planId = btn.dataset.sub;
+    const price = btn.dataset.price;
+    const isActive = btn.dataset.active === "true";
+    const statusEl = document.querySelector(`[data-status-plan="${planId}"]`);
+    btn.disabled = true;
+    statusEl.textContent = isActive ? "Renewing…" : "Subscribing…";
     try {
-      const badgeLine = method === "subscribe" ? `let badge = subs.subscribe(${planId}u32, payment);\n    account.deposit(badge);` : `subs.renew(${planId}u32, payment);`;
+      const badgeLine = isActive
+        ? `subs.renew(${planId}u32, payment);`
+        : `let badge = subs.subscribe(${planId}u32, payment);\n    account.deposit(badge);`;
       const result = await submitManifestAndWait(
-        `fn main() {\n    let subs = var!["subs"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${toRaw(price)}u64);\n    ${badgeLine}\n}`,
+        `fn main() {\n    let subs = var!["subs"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${price}u64);\n    ${badgeLine}\n}`,
         { subs: SUBSCRIPTION, account: accountAddress }
       );
-      showLog(logEl, eventsSummary(result));
       const failure = extractFailureReason(result);
-      setStatus(statusEl, failure ? "Rejected: " + failure : "Done.", failure ? "err" : "ok");
+      statusEl.textContent = failure ? "Rejected: " + failure : "Done.";
+      if (!failure && !isActive) {
+        btn.textContent = "Renew";
+        btn.dataset.active = "true";
+        btn.parentElement.previousElementSibling.querySelector(".badge").textContent = "Active";
+        btn.parentElement.previousElementSibling.querySelector(".badge").classList.add("active");
+      }
       refreshBalance();
-    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
+    } catch (err) { statusEl.textContent = "Failed: " + err.message; }
+    btn.disabled = false;
   }
-  document.getElementById("subscribeBtn").addEventListener("click", () => doSubscribe("subscribe"));
-  document.getElementById("renewBtn").addEventListener("click", () => doSubscribe("renew"));
-
-  document.getElementById("checkActiveBtn").addEventListener("click", async () => {
-    const statusEl = document.getElementById("activeStatus");
-    const planId = document.getElementById("subPlanId").value.trim();
-    setStatus(statusEl, "Checking…", "pending");
-    try {
-      const result = await submitManifestAndWait(`fn main() {\n    let subs = var!["subs"];\n    subs.is_active(${planId}u32, PublicKey("${accountPublicKey}"));\n}`, { subs: SUBSCRIPTION });
-      const active = readScalar(result);
-      setStatus(statusEl, active ? "Active." : "Not active.", active ? "ok" : "err");
-    } catch (err) { setStatus(statusEl, "Failed: " + err.message, "err"); }
-  });
 </script>
