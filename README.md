@@ -169,14 +169,22 @@ event, not a real historical timestamp — documented in the app's own UI, not s
 
 ## The app
 
-`app/` is a small, dependency-free static site (three pages, no build step) that drives all three
+`app/` is a small, dependency-free static site (four pages, no build step) that drives all three
 contracts against the deployed components above:
 
-- **`index.html`** — overview and links to the other two pages.
+- **`index.html`** — overview and links to the other pages.
 - **`merchant.html`** — the merchant console: register/stake, create products and subscription
-  plans, and a dashboard of orders and revenue (today / this month / all-time) sourced from the
-  public indexer's event log.
-- **`pay.html`** — the customer-facing page: buy a product or subscribe to a plan.
+  plans (names go into the `ProductCreated`/`PlanCreated` events, so anyone reading the chain sees
+  them — nothing merchant-identifying is kept off-chain), and a dashboard of orders and revenue
+  (today / this month / all-time) sourced from the public indexer's event log.
+- **`pay.html`** — the customer-facing storefront. `pay.html?id=<merchant public key>` loads that
+  merchant's shop directly (products and plans read straight from the chain, price shown read-only,
+  nothing to type); with no `id` it lists every active registered merchant to browse instead. Can
+  buy/subscribe as any account in the connected wallet, not just its default one.
+- **`admin.html`** — owner-only registry dashboard: who's registered, their stake and tier, and the
+  owner-gated actions (`slash`, `finalize_exit`, `withdraw_treasury`). Connecting a wallet that isn't
+  the registry's owner still shows the same read-only stats (they're public — anyone querying the
+  indexer sees the same thing) but the owner-gated actions will be rejected on-chain.
 
 To run it:
 

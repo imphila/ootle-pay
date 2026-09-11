@@ -66,7 +66,12 @@ fn register_merchant(
 }
 
 fn create_plan(test: &mut TemplateTest, subs: ComponentAddress, merchant_pk: RistrettoPublicKeyBytes) -> u32 {
-    test.call_method::<u32>(subs, "create_plan", args![merchant_pk, Amount::from(PRICE), TARI_TOKEN], vec![])
+    test.call_method::<u32>(
+        subs,
+        "create_plan",
+        args![merchant_pk, "Test Plan".to_string(), Amount::from(PRICE), TARI_TOKEN],
+        vec![],
+    )
 }
 
 /// First-time subscription: pays for period 1 and deposits the returned membership badge into the

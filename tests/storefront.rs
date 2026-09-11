@@ -6,7 +6,7 @@ use tari_template_lib::types::{Amount, ComponentAddress, constants::TARI_TOKEN, 
 use tari_template_test_tooling::{TemplateTest, support::assert_error::assert_reject_reason};
 
 const REGISTRY_TEMPLATE_NAME: &str = "MerchantRegistry";
-const PRIVATE_PAY_TEMPLATE_NAME: &str = "PrivatePay";
+const STOREFRONT_TEMPLATE_NAME: &str = "Storefront";
 const CRATE_PATH: &str = env!("CARGO_MANIFEST_DIR");
 const MIN_STAKE: u64 = 1000;
 const PRICE: u64 = 20;
@@ -14,11 +14,11 @@ const PRICE: u64 = 20;
 struct Setup {
     test: TemplateTest,
     registry: ComponentAddress,
-    private_pay: ComponentAddress,
+    storefront: ComponentAddress,
 }
 
 fn setup() -> Setup {
-    let mut test = TemplateTest::new(CRATE_PATH, vec!["tests/templates/private_pay", "tests/templates/merchant_registry"]);
+    let mut test = TemplateTest::new(CRATE_PATH, vec!["tests/templates/storefront", "tests/templates/merchant_registry"]);
 
     let registry_template = test.get_template_address(REGISTRY_TEMPLATE_NAME);
     test.execute_expect_success(
@@ -33,14 +33,14 @@ fn setup() -> Setup {
         .unwrap()
         .remove(0);
 
-    let pay_template = test.get_template_address(PRIVATE_PAY_TEMPLATE_NAME);
+    let pay_template = test.get_template_address(STOREFRONT_TEMPLATE_NAME);
     test.execute_expect_success(
         test.transaction()
             .call_function(pay_template, "new", args![registry])
             .build_and_seal(test.secret_key()),
         vec![],
     );
-    let (private_pay, _) = test
+    let (storefront, _) = test
         .read_only_state_store()
         .get_components_by_template_address(pay_template)
         .unwrap()
@@ -49,7 +49,7 @@ fn setup() -> Setup {
     Setup {
         test,
         registry,
-        private_pay,
+        storefront,
     }
 }
 
@@ -73,9 +73,9 @@ fn register_merchant(setup: &mut Setup) -> RistrettoPublicKeyBytes {
 
 fn create_product(setup: &mut Setup, merchant_pk: RistrettoPublicKeyBytes) -> u32 {
     setup.test.call_method::<u32>(
-        setup.private_pay,
+        setup.storefront,
         "create_product",
-        args![merchant_pk, Amount::from(PRICE), TARI_TOKEN],
+        args![merchant_pk, "Test Product".to_string(), Amount::from(PRICE), TARI_TOKEN],
         vec![],
     )
 }
@@ -90,7 +90,7 @@ fn buy(setup: &mut Setup, product_id: u32, amount: u64) {
             .transaction()
             .call_method(payer, "withdraw", args![TARI_TOKEN, Amount::from(amount)])
             .put_last_instruction_output_on_workspace("payment")
-            .call_method(setup.private_pay, "buy", args![product_id, Workspace("payment")])
+            .call_method(setup.storefront, "buy", args![product_id, Workspace("payment")])
             .build_and_seal(&payer_secret),
         vec![],
     );
@@ -104,7 +104,7 @@ fn buy_expect_failure(setup: &mut Setup, product_id: u32, amount: u64) -> String
             .transaction()
             .call_method(payer, "withdraw", args![TARI_TOKEN, Amount::from(amount)])
             .put_last_instruction_output_on_workspace("payment")
-            .call_method(setup.private_pay, "buy", args![product_id, Workspace("payment")])
+            .call_method(setup.storefront, "buy", args![product_id, Workspace("payment")])
             .build_and_seal(&payer_secret),
         vec![],
     );
@@ -121,9 +121,9 @@ fn creating_a_product_for_an_unregistered_merchant_is_rejected() {
             .test
             .transaction()
             .call_method(
-                setup.private_pay,
+                setup.storefront,
                 "create_product",
-                args![not_a_merchant, Amount::from(PRICE), TARI_TOKEN],
+                args![not_a_merchant, "Test Product".to_string(), Amount::from(PRICE), TARI_TOKEN],
             )
             .build_and_seal(setup.test.secret_key()),
         vec![],
@@ -142,7 +142,7 @@ fn registered_merchants_product_can_be_created_and_bought() {
     let (price, order_count, revenue) =
         setup
             .test
-            .call_method::<(Amount, u32, Amount)>(setup.private_pay, "get_product_info", args![product_id], vec![]);
+            .call_method::<(Amount, u32, Amount)>(setup.storefront, "get_product_info", args![product_id], vec![]);
     assert_eq!(price, Amount::from(PRICE));
     assert_eq!(order_count, 1);
     assert_eq!(revenue, Amount::from(PRICE));
@@ -177,7 +177,7 @@ fn buying_twice_from_different_accounts_accumulates_order_count_and_revenue_and_
             .transaction()
             .call_method(payer_b, "withdraw", args![TARI_TOKEN, Amount::from(PRICE)])
             .put_last_instruction_output_on_workspace("payment")
-            .call_method(setup.private_pay, "buy", args![product_id, Workspace("payment")])
+            .call_method(setup.storefront, "buy", args![product_id, Workspace("payment")])
             .build_and_seal(&payer_b_secret),
         vec![],
     );
@@ -185,7 +185,7 @@ fn buying_twice_from_different_accounts_accumulates_order_count_and_revenue_and_
     let (_, order_count, revenue) =
         setup
             .test
-            .call_method::<(Amount, u32, Amount)>(setup.private_pay, "get_product_info", args![product_id], vec![]);
+            .call_method::<(Amount, u32, Amount)>(setup.storefront, "get_product_info", args![product_id], vec![]);
     assert_eq!(order_count, 2);
     assert_eq!(revenue, Amount::from(PRICE * 2));
 
@@ -194,7 +194,7 @@ fn buying_twice_from_different_accounts_accumulates_order_count_and_revenue_and_
         .finalize
         .events
         .iter()
-        .find(|e| e.topic() == "PrivatePay.OrderPlaced")
+        .find(|e| e.topic() == "Storefront.OrderPlaced")
         .expect("OrderPlaced event not found");
     assert_eq!(event.get_payload("product_id").unwrap(), product_id.to_string());
     assert_eq!(event.get_payload("merchant").unwrap(), merchant_pk.to_string());
@@ -215,7 +215,7 @@ fn claim_revenue_by_a_non_merchant_is_rejected() {
         setup
             .test
             .transaction()
-            .call_method(setup.private_pay, "claim_revenue", args![product_id])
+            .call_method(setup.storefront, "claim_revenue", args![product_id])
             .put_last_instruction_output_on_workspace("revenue")
             .call_method(impostor, "deposit", args![Workspace("revenue")])
             .build_and_seal(&impostor_secret),
@@ -252,7 +252,7 @@ fn merchant_can_claim_revenue_and_a_second_claim_drains_nothing_more() {
         setup
             .test
             .transaction()
-            .call_method(setup.private_pay, "claim_revenue", args![product_id])
+            .call_method(setup.storefront, "claim_revenue", args![product_id])
             .put_last_instruction_output_on_workspace("revenue")
             .call_method(merchant_account, "deposit", args![Workspace("revenue")])
             .build_and_seal(&merchant_secret),
@@ -266,7 +266,7 @@ fn merchant_can_claim_revenue_and_a_second_claim_drains_nothing_more() {
     let (_, _, revenue_after_claim) =
         setup
             .test
-            .call_method::<(Amount, u32, Amount)>(setup.private_pay, "get_product_info", args![product_id], vec![]);
+            .call_method::<(Amount, u32, Amount)>(setup.storefront, "get_product_info", args![product_id], vec![]);
     assert_eq!(revenue_after_claim, Amount::ZERO);
 
     // A second claim withdraws an empty (zero-balance) bucket rather than failing.
@@ -274,7 +274,7 @@ fn merchant_can_claim_revenue_and_a_second_claim_drains_nothing_more() {
         setup
             .test
             .transaction()
-            .call_method(setup.private_pay, "claim_revenue", args![product_id])
+            .call_method(setup.storefront, "claim_revenue", args![product_id])
             .put_last_instruction_output_on_workspace("revenue")
             .call_method(merchant_account, "deposit", args![Workspace("revenue")])
             .build_and_seal(&merchant_secret),
