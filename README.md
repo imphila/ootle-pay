@@ -92,7 +92,7 @@ full order history and per-product revenue straight from the chain.
 
 ```rust
 new(registry: ComponentAddress) -> Component<Self>
-create_product(&mut self, merchant: RistrettoPublicKeyBytes, price: Amount, resource: ResourceAddress) -> u32
+create_product(&mut self, merchant: RistrettoPublicKeyBytes, name: String, price: Amount, resource: ResourceAddress) -> u32
 buy(&mut self, product_id: u32, payment: Bucket) -> u32   // returns this order's number; emits OrderPlaced{product_id, merchant, buyer, amount, order_number}
 get_product_info(&self, product_id: u32) -> (Amount /*price*/, u32 /*order_count*/, Amount /*revenue*/)
 claim_revenue(&mut self, product_id: u32) -> Bucket   // caller must be the product's merchant
@@ -107,7 +107,7 @@ the merchant once per billing cycle (e.g. a monthly cron).
 
 ```rust
 new(registry: ComponentAddress) -> Component<Self>
-create_plan(&mut self, merchant: RistrettoPublicKeyBytes, price: Amount, resource: ResourceAddress) -> u32
+create_plan(&mut self, merchant: RistrettoPublicKeyBytes, name: String, price: Amount, resource: ResourceAddress) -> u32
 advance_period(&mut self, plan_id: u32)
 subscribe(&mut self, plan_id: u32, payment: Bucket) -> Bucket   // first time; subscriber = caller's account; returns a membership badge
 renew(&mut self, plan_id: u32, payment: Bucket)                  // subsequent periods; must be called by the same account that subscribed
@@ -126,8 +126,8 @@ Deployed and exercised for real on the Tari Ootle **esme** testnet (via a local
 | Contract | Template address |
 |---|---|
 | `MerchantRegistry` | `template_41ab42e3ec32a60355957fa8eda7270be0f5b2b9f76b95bb10111d1c8bf9d241` |
-| `Storefront` | `template_a7b6474dd1e2a1656e6d8ad3f7fa8b0bc17961dbe243f073a637fd61d4c39915` |
-| `SubscriptionManager` | `template_2eeb3142073845b8e22ee4e8184294b5a80b2dc2af579faeafa4ea47a8e02e83` |
+| `Storefront` | `template_ef0f74e10b9d92fe0a449824a808cfe950542553ce2cf7138d412cfb22f366f7` |
+| `SubscriptionManager` | `template_6a03bc20ab8fd89dfd4c97c0fcc6947097412b6b56fbbb94a8804c92fea425ab` |
 
 **Deployed component instances** (wired together — `storefront` and `subscription` both point at
 the same registry):
@@ -135,21 +135,21 @@ the same registry):
 | Contract | Component address |
 |---|---|
 | `merchant_registry` | `component_07ef58a3d3dbaa9fe6195bd2929c6dac4161e1aa3e2e29cd5bcdb05c7e8b8254` |
-| `storefront` | `component_72de258522c0fea2c6f5d98449cb1387260d622aace6afc06512e3d83c999060` |
-| `subscription` | `component_20f6aa88777ca93ad1ed04ec6a6e77c6a1c27b9c5ca252d2130fdd3b7ab19a23` |
+| `storefront` | `component_671d3fee859d76520e8c334954203ff39d12bcd73993dcb3bada8f519d22dc3e` |
+| `subscription` | `component_d4333f6800a25fc05e04fd58d65a63e023b4f93ed1f03d261491f69ec3d34573` |
 
 **Real transactions exercising every flow:**
 
 | Flow | Transaction id | Result |
 |---|---|---|
 | Register as merchant | `3f2bcc2afcca3e2c5804b158d5d2285e6d7618f37284f6785325fee01fcecc55` | `MerchantRegistry.MerchantRegistered` — tier `Basic` |
-| Create a product | `dbfff41038e910feeaaf9a747936a82c6de74afa4286916aa6ddd0db8786c43c` | `Storefront.ProductCreated {merchant, price: 20, product_id: 0}` |
-| Buy that product | `436660cc699316caaa0eda8185a38349600c7f0574dea08d0d7462300d32bd25` | `Storefront.OrderPlaced {product_id: 0, merchant, buyer, amount: 20, order_number: 1}` |
-| Claim product revenue | `ebf77fc8f505f3b4785647c2acae9ea19ade34aabba5453beab184eb118ca64f` | Vault drained — `get_product_info(0)` afterward read back `(20, 1, 0)` |
-| Create a subscription plan | `999cf14eb40d69b7fe598d9bba71894ae621b47141ce566950ae10c1c221cf25` | `SubscriptionManager.PlanCreated {merchant, plan_id: 0, price: 50}` |
-| Subscribe | `ca6cbd491bbe6f9961ad31255567fb860118dd200759a695cb1603dc241e9302` | `SubscriptionRenewed {plan_id: 0, subscriber, paid_until_period: 1}` |
-| Advance the billing period | `8e66f71c9a57c4404fecdd3d4e0d007f686fdafc53af6dbb344dd0dcb0a585cf` | Accepted |
-| Renew | `aa484f282ea9f75b6490a5397a20e134c6f54459d422aa5564d7cffa7dbe5968` | `SubscriptionRenewed {..., paid_until_period: 2}` — `is_active` read back `true` afterward |
+| Create a product | `0fe8557dcaee780b4751e471f40da8cf6878d63e0a8b1695e5602970ce013d31` | `Storefront.ProductCreated {merchant, name: "Ootle Pay Badge", price: 20, product_id: 0}` |
+| Buy that product | `7be93988e998ba89a216a5793524388ee2230fa2df2b9d2d7dfa1a7469f8a3f2` | `Storefront.OrderPlaced {product_id: 0, merchant, buyer, amount: 20, order_number: 1}` |
+| Claim product revenue | `f5b4746dd6ace856fedcf45732e240c859eccabae9e787c23cf38f670d6e10e1` | Vault drained — `get_product_info(0)` afterward read back `(20, 1, 0)` |
+| Create a subscription plan | `457cfb40a106c59ba342bda2285ad78be9bff30ac7c8790e94cd4b606b22917c` | `SubscriptionManager.PlanCreated {merchant, name: "Premium Monthly", plan_id: 0, price: 50}` |
+| Subscribe | `5bee449ccd8c0e13662b9dfd1d1ebdf2d3c2996178c5126cf28ae96c7fff771f` | `SubscriptionRenewed {plan_id: 0, subscriber, paid_until_period: 1}` |
+| Advance the billing period | `08b405a48eedbd0c0d553e6a27580fa85c3fc1acc32425f5353d365910cab76c` | Accepted |
+| Renew | `c3ffd396447c01905619f9fc1c39ad087b173d937edf2b806a4c7bfa59bc76aa` | `SubscriptionRenewed {..., paid_until_period: 2}` — `is_active` read back `true` afterward |
 
 These were submitted via the wallet daemon's `transactions.submit_manifest` JSON-RPC method, using
 its Rust-like manifest DSL (parsed with `syn` - e.g. `registry.register(account.withdraw(XTR,

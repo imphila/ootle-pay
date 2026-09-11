@@ -62,10 +62,18 @@ mod subscription_template {
         }
 
         /// Registers a new subscription plan for `merchant` (who must already be registered in the
-        /// merchant registry) at a fixed public `price`, denominated in `resource`.
+        /// merchant registry) at a fixed public `price`, denominated in `resource`. `name` is not
+        /// stored - it only ever lives in the `PlanCreated` event, which is how subscribers (and
+        /// the merchant's own dashboard) discover it; the contract itself has no use for it.
         ///
         /// Callable by: anyone (the registry check is what actually gates this).
-        pub fn create_plan(&mut self, merchant: RistrettoPublicKeyBytes, price: Amount, resource: ResourceAddress) -> u32 {
+        pub fn create_plan(
+            &mut self,
+            merchant: RistrettoPublicKeyBytes,
+            name: String,
+            price: Amount,
+            resource: ResourceAddress,
+        ) -> u32 {
             let is_registered: bool = self.registry.call("is_registered", args![merchant]);
             assert!(is_registered, "Merchant is not registered");
             assert!(price > Amount::ZERO, "Price must be greater than zero");
@@ -83,6 +91,7 @@ mod subscription_template {
             emit_event("PlanCreated", metadata![
                 "plan_id" => plan_id.to_string(),
                 "merchant" => merchant.to_string(),
+                "name" => name,
                 "price" => price.to_string(),
             ]);
             plan_id

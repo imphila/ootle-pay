@@ -205,7 +205,7 @@
         <code>OrderPlaced</code> event, so order count and revenue below are read from the chain,
         not typed in by hand.</p>
       <form class="inline" id="createProductForm">
-        <div><label for="productName">Name (kept in your browser only — the chain only knows a product id and price)</label><input id="productName" placeholder="e.g. Consulting hour" /></div>
+        <div><label for="productName">Name (public — anyone browsing your shop sees this)</label><input id="productName" placeholder="e.g. Consulting hour" /></div>
         <div><label for="productPrice">Price (XTR)</label><input id="productPrice" value="20" /></div>
         <button id="createProductBtn">Create product</button>
       </form>
@@ -226,7 +226,7 @@
       <p class="card-note">Recurring plans. There's no on-chain clock, so you advance the billing
         period yourself once per cycle (e.g. a monthly cron) — <code>advance_period</code> below.</p>
       <form class="inline" id="createPlanForm">
-        <div><label for="planName">Name (kept in your browser only)</label><input id="planName" placeholder="e.g. Pro monthly" /></div>
+        <div><label for="planName">Name (public — anyone browsing your shop sees this)</label><input id="planName" placeholder="e.g. Pro monthly" /></div>
         <div><label for="planPrice">Price per period (XTR)</label><input id="planPrice" value="50" /></div>
         <button id="createPlanBtn">Create plan</button>
       </form>
@@ -254,8 +254,8 @@
 
 <script>
   const REGISTRY = "component_07ef58a3d3dbaa9fe6195bd2929c6dac4161e1aa3e2e29cd5bcdb05c7e8b8254";
-  const STOREFRONT = "component_72de258522c0fea2c6f5d98449cb1387260d622aace6afc06512e3d83c999060";
-  const SUBSCRIPTION = "component_20f6aa88777ca93ad1ed04ec6a6e77c6a1c27b9c5ca252d2130fdd3b7ab19a23";
+  const STOREFRONT = "component_671d3fee859d76520e8c334954203ff39d12bcd73993dcb3bada8f519d22dc3e";
+  const SUBSCRIPTION = "component_d4333f6800a25fc05e04fd58d65a63e023b4f93ed1f03d261491f69ec3d34573";
   const INDEXER = "https://ootle-indexer-a.tari.com";
   const CATALOG_KEY = "ootlePay.catalog";       // { products: {id: name}, plans: {id: name} }
   const REVENUE_LOG_KEY = "ootlePay.revenueLog"; // { seen: {eventKey: observedAtMs|null} }
@@ -442,7 +442,7 @@
     setStatus(statusEl, "Creating product…", "pending");
     try {
       const result = await submitManifestAndWait(
-        `fn main() {\n    let store = var!["store"];\n    store.create_product(PublicKey("${accountPublicKey}"), ${toRaw(price)}u64, XTR);\n}`,
+        `fn main() {\n    let store = var!["store"];\n    store.create_product(PublicKey("${accountPublicKey}"), ${JSON.stringify(name)}, ${toRaw(price)}u64, XTR);\n}`,
         { store: STOREFRONT }
       );
       const failure = extractFailureReason(result);
@@ -466,7 +466,7 @@
     setStatus(statusEl, "Creating plan…", "pending");
     try {
       const result = await submitManifestAndWait(
-        `fn main() {\n    let subs = var!["subs"];\n    subs.create_plan(PublicKey("${accountPublicKey}"), ${toRaw(price)}u64, XTR);\n}`,
+        `fn main() {\n    let subs = var!["subs"];\n    subs.create_plan(PublicKey("${accountPublicKey}"), ${JSON.stringify(name)}, ${toRaw(price)}u64, XTR);\n}`,
         { subs: SUBSCRIPTION }
       );
       const failure = extractFailureReason(result);
@@ -575,7 +575,7 @@
           const info = readScalar(infoRaw);
           claimable = info ? info[2] : "?";
         } catch { claimable = "?"; }
-        const name = catalog.products[id] || `Product #${id}`;
+        const name = (created && created.payload.name) || catalog.products[id] || `Product #${id}`;
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${name}</td><td>${fmtTari(created.payload.price)}</td><td>${orders.length}</td><td>${fmtTari(revenue)}</td><td>${fmtTari(claimable)}</td><td class="actions"><button class="ghost" data-claim-product="${id}">Claim</button></td>`;
         productsTable.appendChild(tr);
@@ -597,7 +597,7 @@
         const subscribers = new Set(renewals.map((e) => e.payload.subscriber)).size;
         const revenue = renewals.length * Number(created.payload.price);
         const currentPeriod = renewals.length ? Math.max(...renewals.map((e) => Number(e.payload.paid_until_period))) - 1 : 0;
-        const name = catalog.plans[id] || `Plan #${id}`;
+        const name = (created && created.payload.name) || catalog.plans[id] || `Plan #${id}`;
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${name}</td><td>${fmtTari(created.payload.price)}</td><td>${currentPeriod}</td><td>${subscribers}</td><td>${fmtTari(revenue)}</td><td class="actions"><button class="ghost" data-advance-plan="${id}">Advance period</button> <button class="ghost" data-claim-plan="${id}">Claim</button></td>`;
         plansTable.appendChild(tr);
@@ -610,10 +610,15 @@
     const feed = document.getElementById("activityFeed");
     const feedEmpty = document.getElementById("activityEmpty");
     const combined = [
-      ...myOrders.map((o) => ({ kind: "Order", label: catalog.products[o.payload.product_id] || `Product #${o.payload.product_id}`, who: o.payload.buyer, amount: o.payload.amount })),
+      ...myOrders.map((o) => {
+        const product = myProductsCreated.find((p) => p.payload.product_id === o.payload.product_id);
+        const label = (product && product.payload.name) || catalog.products[o.payload.product_id] || `Product #${o.payload.product_id}`;
+        return { kind: "Order", label, who: o.payload.buyer, amount: o.payload.amount };
+      }),
       ...myRenewals.map((r) => {
         const plan = myPlansCreated.find((p) => p.payload.plan_id === r.payload.plan_id);
-        return { kind: "Renewal", label: catalog.plans[r.payload.plan_id] || `Plan #${r.payload.plan_id}`, who: r.payload.subscriber, amount: plan ? plan.payload.price : "?" };
+        const label = (plan && plan.payload.name) || catalog.plans[r.payload.plan_id] || `Plan #${r.payload.plan_id}`;
+        return { kind: "Renewal", label, who: r.payload.subscriber, amount: plan ? plan.payload.price : "?" };
       }),
     ].reverse();
     feed.innerHTML = "";
