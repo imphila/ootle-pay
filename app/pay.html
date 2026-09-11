@@ -150,6 +150,9 @@
   </div>
 
   <div id="appPanels">
+    <div class="balance">
+      Buy as <select id="accountSelect" style="display:inline-block; width:auto; margin:0 0 0 4px; padding:2px 6px; font-size:0.8rem;"></select>
+    </div>
     <div class="balance" id="walletBalance">—</div>
 
     <div id="browseView">
@@ -187,7 +190,7 @@
   const SUBSCRIPTION = "component_d4333f6800a25fc05e04fd58d65a63e023b4f93ed1f03d261491f69ec3d34573";
   const INDEXER = "https://ootle-indexer-a.tari.com";
 
-  let daemonUrl = "", authToken = "", accountAddress = "", accountPublicKey = "", rpcId = 1;
+  let daemonUrl = "", authToken = "", accountAddress = "", accountPublicKey = "", accountKeyId = null, rpcId = 1;
 
   async function rpc(method, params) {
     const res = await fetch(daemonUrl, {
@@ -201,7 +204,7 @@
   }
   async function submitManifestAndWait(manifest, variables) {
     const submitted = await rpc("transactions.submit_manifest", {
-      manifest, variables, seal_signer_key_id: null, signing_key_ids: [], max_fee: 100000, dry_run: false, blobs: {},
+      manifest, variables, seal_signer_key_id: accountKeyId, signing_key_ids: [], max_fee: 100000, dry_run: false, blobs: {},
     });
     return rpc("transactions.wait_result", { transaction_id: submitted.transaction_id, timeout_secs: 60 });
   }
@@ -277,6 +280,18 @@
 
   const params = new URLSearchParams(location.search);
 
+  function applyAccountSelection(accountsList) {
+    const address = document.getElementById("accountSelect").value;
+    const entry = accountsList.find((e) => (e.account ?? e).component_address === address);
+    const account = entry.account ?? entry;
+    accountAddress = account.component_address;
+    accountPublicKey = account.owner_public_key;
+    accountKeyId = account.owner_key_id;
+    refreshBalance();
+    const merchantId = params.get("id");
+    if (merchantId && document.getElementById("shopView").style.display !== "none") { showShop(merchantId); }
+  }
+
   document.getElementById("connectBtn").addEventListener("click", async () => {
     const btn = document.getElementById("connectBtn");
     const statusEl = document.getElementById("connectStatus");
@@ -286,16 +301,25 @@
       daemonUrl = document.getElementById("daemonUrl").value.trim();
       const auth = await rpc("auth.request", { permissions: ["Admin"], credentials: "None" });
       authToken = auth.token;
-      let accounts = await rpc("accounts.list", { offset: 0, limit: 1 });
-      let entry;
-      if (accounts.accounts.length === 0) { entry = (await rpc("accounts.create", {})).account; }
-      else { entry = accounts.accounts[0]; }
-      const account = entry.account ?? entry;
-      accountAddress = account.component_address;
-      accountPublicKey = account.owner_public_key;
+      let accounts = await rpc("accounts.list", { offset: 0, limit: 50 });
+      if (accounts.accounts.length === 0) { accounts = { accounts: [{ account: (await rpc("accounts.create", {})).account }] }; }
+
+      const select = document.getElementById("accountSelect");
+      select.innerHTML = "";
+      for (const entry of accounts.accounts) {
+        const account = entry.account ?? entry;
+        const opt = document.createElement("option");
+        opt.value = account.component_address;
+        opt.textContent = account.name || short(account.owner_public_key);
+        select.appendChild(opt);
+      }
+      const defaultEntry = accounts.accounts.find((e) => (e.account ?? e).is_default) ?? accounts.accounts[0];
+      select.value = (defaultEntry.account ?? defaultEntry).component_address;
+      applyAccountSelection(accounts.accounts);
+      select.addEventListener("change", () => applyAccountSelection(accounts.accounts));
+
       document.getElementById("connectPanel").style.display = "none";
       document.getElementById("appPanels").style.display = "block";
-      refreshBalance();
 
       const merchantId = params.get("id");
       if (merchantId) { showShop(merchantId); } else { showBrowse(); }
@@ -440,7 +464,7 @@
     statusEl.textContent = "Buying…";
     try {
       const result = await submitManifestAndWait(
-        `fn main() {\n    let store = var!["store"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${price}u64);\n    store.buy(${productId}u32, payment);\n}`,
+        `fn fee_main() {\n    let account = var!["account"];\n    account.pay_fee(50000u64);\n}\nfn main() {\n    let store = var!["store"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${price}u64);\n    store.buy(${productId}u32, payment);\n}`,
         { store: STOREFRONT, account: accountAddress }
       );
       const failure = extractFailureReason(result);
@@ -462,7 +486,7 @@
         ? `subs.renew(${planId}u32, payment);`
         : `let badge = subs.subscribe(${planId}u32, payment);\n    account.deposit(badge);`;
       const result = await submitManifestAndWait(
-        `fn main() {\n    let subs = var!["subs"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${price}u64);\n    ${badgeLine}\n}`,
+        `fn fee_main() {\n    let account = var!["account"];\n    account.pay_fee(50000u64);\n}\nfn main() {\n    let subs = var!["subs"];\n    let account = var!["account"];\n    let payment = account.withdraw(XTR, ${price}u64);\n    ${badgeLine}\n}`,
         { subs: SUBSCRIPTION, account: accountAddress }
       );
       const failure = extractFailureReason(result);
