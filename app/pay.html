@@ -127,6 +127,17 @@
 
   .badge { font-size: 0.68rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; background: var(--surface-2); color: var(--text-dim); }
   .badge.active { background: var(--ok-bg); color: var(--ok); }
+  .badge.pending { background: var(--pending-bg); color: var(--pending); }
+  .badge.err { background: var(--err-bg); color: var(--err); }
+
+  .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .order-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .order-name { font-weight: 600; font-size: 0.9rem; }
+  .order-meta { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.76rem; color: var(--text-dim); margin-top: 3px; }
+  .order-reason { font-size: 0.8rem; color: var(--text-dim); margin-top: 8px; }
+  .order-refund-form { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .order-refund-form input { flex: 1; min-width: 160px; margin: 0; }
+  .order-refund-form button { flex-shrink: 0; }
 </style>
 
 <nav class="top">
@@ -183,6 +194,12 @@
         <h2>Subscription plans</h2>
         <div id="planList"></div>
         <div id="planListEmpty" class="empty-note" style="display:none">This merchant has no subscription plans yet.</div>
+      </div>
+
+      <div class="section">
+        <h2>Your orders here</h2>
+        <div id="orderList"></div>
+        <div id="orderListEmpty" class="empty-note" style="display:none">You haven't bought anything from this merchant with the connected account yet.</div>
       </div>
     </div>
   </div>
@@ -468,6 +485,116 @@
         planListEl.appendChild(card);
       }
       planListEl.querySelectorAll("[data-sub]").forEach((btn) => btn.addEventListener("click", () => doSubscribeOrRenew(btn)));
+    }
+
+    await loadMyOrders(merchantId, storeEvents, products);
+  }
+
+  // ── Your orders: every order this connected account placed with this merchant, with live
+  //    refund status pulled from get_order_info (not just the OrderPlaced event, since that
+  //    never changes after the fact). ──
+  async function loadMyOrders(merchantId, storeEvents, products) {
+    const listEl = document.getElementById("orderList");
+    const emptyEl = document.getElementById("orderListEmpty");
+    listEl.innerHTML = "Loading…";
+    emptyEl.style.display = "none";
+
+    const myOrders = storeEvents.filter(
+      (e) => e.topic === "Storefront.OrderPlaced" && e.payload.merchant === merchantId && e.payload.buyer === accountPublicKey
+    );
+    if (myOrders.length === 0) {
+      listEl.innerHTML = "";
+      emptyEl.style.display = "block";
+      return;
+    }
+
+    const denials = storeEvents.filter((e) => e.topic === "Storefront.RefundDenied");
+    // Fire every order's get_order_info in parallel - sequential awaits here would otherwise
+    // add several seconds of dry-run round-trip latency per order.
+    const infos = await Promise.all(myOrders.map(async (o) => {
+      try {
+        const infoRaw = await dryRun(
+          `fn main() {\n    let store = var!["store"];\n    store.get_order_info(${o.payload.product_id}u32, ${o.payload.order_number}u32);\n}`,
+          { store: STOREFRONT }
+        );
+        return readScalar(infoRaw);
+      } catch { return null; }
+    }));
+
+    listEl.innerHTML = "";
+    myOrders.forEach((o, i) => {
+      const productId = o.payload.product_id;
+      const orderId = o.payload.order_number;
+      const info = infos[i]; // [buyer, amount, refunded, status]
+      const status = info ? info[3] : "None";
+      const refunded = info ? Number(info[2]) : 0;
+      const amount = info ? Number(info[1]) : Number(o.payload.amount);
+      const product = products.find((p) => String(p.id) === String(productId));
+      const name = product ? product.name : `Product #${productId}`;
+
+      const card = document.createElement("div");
+      card.className = "order-card";
+      let badge = "";
+      let extra = "";
+      if (refunded >= amount && amount > 0) {
+        badge = `<span class="badge active">Fully refunded</span>`;
+      } else if (status === "Requested") {
+        badge = `<span class="badge pending">Refund requested</span>`;
+      } else if (status === "Denied") {
+        badge = `<span class="badge err">Refund denied</span>`;
+        const lastDenial = denials
+          .filter((e) => e.payload.product_id === productId && e.payload.order_id === String(orderId))
+          .pop();
+        if (lastDenial) {
+          extra += `<div class="order-reason">Merchant's reason: "${escapeHtml(lastDenial.payload.reason)}" — if you disagree, contact the platform admin to dispute it (the merchant's stake backs this).</div>`;
+        }
+      } else if (refunded > 0) {
+        badge = `<span class="badge pending">Partially refunded</span>`;
+      }
+
+      const canRequest = refunded < amount && status !== "Requested";
+      card.innerHTML = `
+        <div class="order-head">
+          <div>
+            <div class="order-name">${escapeHtml(name)}</div>
+            <div class="order-meta">Order #${orderId} · ${fmtTari(amount)}${refunded > 0 ? ` · ${fmtTari(refunded)} refunded so far` : ""}</div>
+          </div>
+          ${badge}
+        </div>
+        ${extra}
+        ${canRequest ? `
+          <div class="order-refund-form">
+            <input type="text" placeholder="Reason for the refund request" data-refund-reason="${productId}:${orderId}" />
+            <button class="secondary" data-request-refund="${productId}:${orderId}" type="button">${status === "Denied" ? "Request again" : "Request refund"}</button>
+          </div>
+        ` : ""}
+      `;
+      listEl.appendChild(card);
+    });
+    listEl.querySelectorAll("[data-request-refund]").forEach((btn) => btn.addEventListener("click", () => requestRefund(btn)));
+  }
+
+  async function requestRefund(btn) {
+    const [productId, orderId] = btn.dataset.requestRefund.split(":");
+    const input = document.querySelector(`[data-refund-reason="${productId}:${orderId}"]`);
+    const reason = input.value.trim();
+    if (!reason) { alert("Enter a reason for the refund request - it's recorded on-chain for the merchant to see."); return; }
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = "Requesting…";
+    try {
+      const result = await submitManifestAndWait(
+        `fn fee_main() {\n    let account = var!["account"];\n    account.pay_fee(50000u64);\n}\nfn main() {\n    let store = var!["store"];\n    store.request_refund(${productId}u32, ${orderId}u32, ${JSON.stringify(reason)});\n}`,
+        { store: STOREFRONT, account: accountAddress }
+      );
+      const failure = extractFailureReason(result);
+      if (failure) { alert("Rejected: " + failure); btn.disabled = false; btn.textContent = original; return; }
+      const merchantId = params.get("id");
+      if (merchantId) showShop(merchantId);
+    } catch (err) {
+      alert("Failed: " + err.message);
+      btn.disabled = false;
+      btn.textContent = original;
     }
   }
 

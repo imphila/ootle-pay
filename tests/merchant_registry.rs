@@ -291,3 +291,99 @@ fn slash_reduces_stake_and_can_downgrade_tier() {
     assert_eq!(staked, Amount::from(MIN_STAKE));
     assert_eq!(tier, "Basic");
 }
+
+#[test]
+fn resolve_dispute_pays_the_caller_and_reduces_stake_and_recalculates_tier() {
+    let (mut test, registry) = setup();
+    let (merchant, proof, merchant_secret) = test.create_funded_account();
+    let merchant_pk: RistrettoPublicKeyBytes = proof.to_public_key().unwrap();
+    register(&mut test, registry, merchant, &merchant_secret, MIN_STAKE * 5);
+    assert_eq!(
+        test.call_method::<String>(registry, "get_tier", args![merchant_pk], vec![]),
+        "Standard"
+    );
+
+    let (buyer, _proof, _buyer_secret) = test.create_funded_account();
+    let balance_before = test.call_method::<Amount>(buyer, "balance", args![TARI_TOKEN], vec![]);
+
+    let result = test.execute_expect_success(
+        test.transaction()
+            .call_method(registry, "resolve_dispute", args![
+                merchant_pk,
+                Amount::from(MIN_STAKE * 4),
+                "Confirmed: item never shipped".to_string()
+            ])
+            .put_last_instruction_output_on_workspace("payout")
+            .call_method(buyer, "deposit", args![Workspace("payout")])
+            .build_and_seal(test.secret_key()),
+        vec![],
+    );
+
+    let balance_after = test.call_method::<Amount>(buyer, "balance", args![TARI_TOKEN], vec![]);
+    assert_eq!(balance_after, balance_before + Amount::from(MIN_STAKE * 4));
+
+    let (staked, tier, active) =
+        test.call_method::<(Amount, String, bool)>(registry, "get_merchant_info", args![merchant_pk], vec![]);
+    assert_eq!(staked, Amount::from(MIN_STAKE));
+    assert_eq!(tier, "Basic");
+    assert!(active);
+
+    let event = result
+        .finalize
+        .events
+        .iter()
+        .find(|e| e.topic() == "MerchantRegistry.DisputeResolved")
+        .expect("DisputeResolved event not found");
+    assert_eq!(event.get_payload("merchant").unwrap(), merchant_pk.to_string());
+    assert_eq!(event.get_payload("amount").unwrap(), (MIN_STAKE * 4).to_string());
+    assert_eq!(event.get_payload("reason").unwrap(), "Confirmed: item never shipped");
+}
+
+#[test]
+fn resolve_dispute_awarding_more_than_the_stake_is_rejected() {
+    let (mut test, registry) = setup();
+    let (merchant, proof, merchant_secret) = test.create_funded_account();
+    let merchant_pk: RistrettoPublicKeyBytes = proof.to_public_key().unwrap();
+    register(&mut test, registry, merchant, &merchant_secret, MIN_STAKE);
+
+    let reason = test.execute_expect_failure(
+        test.transaction()
+            .call_method(registry, "resolve_dispute", args![
+                merchant_pk,
+                Amount::from(MIN_STAKE + 1),
+                "too much".to_string()
+            ])
+            .build_and_seal(test.secret_key()),
+        vec![],
+    );
+    assert_reject_reason(reason, "Cannot award more than the merchant has staked");
+}
+
+#[test]
+fn dismiss_dispute_emits_an_event_and_moves_no_funds() {
+    let (mut test, registry) = setup();
+    let (merchant, proof, merchant_secret) = test.create_funded_account();
+    let merchant_pk: RistrettoPublicKeyBytes = proof.to_public_key().unwrap();
+    register(&mut test, registry, merchant, &merchant_secret, MIN_STAKE);
+
+    let result = test.execute_expect_success(
+        test.transaction()
+            .call_method(registry, "dismiss_dispute", args![merchant_pk, "Tracking shows delivered".to_string()])
+            .build_and_seal(test.secret_key()),
+        vec![],
+    );
+
+    let (staked, _, active) =
+        test.call_method::<(Amount, String, bool)>(registry, "get_merchant_info", args![merchant_pk], vec![]);
+    assert_eq!(staked, Amount::from(MIN_STAKE));
+    assert!(active);
+
+    let event = result
+        .finalize
+        .events
+        .iter()
+        .find(|e| e.topic() == "MerchantRegistry.DisputeDismissed")
+        .expect("DisputeDismissed event not found");
+    assert_eq!(event.get_payload("merchant").unwrap(), merchant_pk.to_string());
+    assert_eq!(event.get_payload("reason").unwrap(), "Tracking shows delivered");
+}

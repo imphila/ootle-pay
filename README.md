@@ -57,7 +57,9 @@ gateway.
 
 Stake-gated registry. Merchants stake a bond (`min_stake` of a deployer-chosen resource), get
 tiered (Basic / Standard / Premium, at 1×/5×/20× `min_stake`), and can be slashed into the
-registry's treasury for misbehaviour found in off-chain/other-contract dispute resolution.
+registry's treasury for misbehaviour found in off-chain/other-contract dispute resolution — or,
+for a refund dispute specifically, have that same stake paid straight to the wronged buyer instead
+(see `resolve_dispute` below and [Refunds and disputes](#refunds-and-disputes)).
 
 **Trust assumption, stated plainly:** `request_exit` is self-service (any merchant can mark
 themselves inactive at any time, and `cancel_exit_request` reverses it just as freely as long as
@@ -82,6 +84,8 @@ cancel_exit_request(&mut self)                                          // rever
 finalize_exit(&mut self, merchant: RistrettoPublicKeyBytes) -> Bucket   // owner-only; returns the full stake
 reject_exit(&mut self, merchant: RistrettoPublicKeyBytes, reason: String)  // owner-only; confiscates the full stake instead
 slash(&mut self, merchant: RistrettoPublicKeyBytes, amount: Amount)     // owner-only
+resolve_dispute(&mut self, merchant: RistrettoPublicKeyBytes, amount: Amount, reason: String) -> Bucket  // owner-only; like slash, but pays the amount to the caller (routed to the buyer) instead of the treasury
+dismiss_dispute(&mut self, merchant: RistrettoPublicKeyBytes, reason: String)  // owner-only; records a ruling for the merchant, no funds move
 treasury_balance(&self) -> Amount
 withdraw_treasury(&mut self) -> Bucket                                   // owner-only
 is_registered(&self, merchant: RistrettoPublicKeyBytes) -> bool          // false once request_exit has been called, not just after finalize/reject
@@ -105,7 +109,26 @@ create_product(&mut self, merchant: RistrettoPublicKeyBytes, name: String, price
 buy(&mut self, product_id: u32, payment: Bucket) -> u32   // rejected if the merchant is no longer registered; returns this order's number; emits OrderPlaced{product_id, merchant, buyer, amount, order_number}
 get_product_info(&self, product_id: u32) -> (Amount /*price*/, u32 /*order_count*/, Amount /*revenue*/)
 claim_revenue(&mut self, product_id: u32) -> Bucket   // caller must be the product's merchant
+request_refund(&mut self, product_id: u32, order_id: u32, reason: String)   // caller must be the order's buyer
+approve_refund(&mut self, product_id: u32, order_id: u32, amount: Amount) -> Bucket   // caller must be the product's merchant; with or without a prior request; partial refunds allowed
+deny_refund(&mut self, product_id: u32, order_id: u32, reason: String)     // caller must be the product's merchant; requires a pending request
+get_order_info(&self, product_id: u32, order_id: u32) -> (RistrettoPublicKeyBytes /*buyer*/, Amount /*price*/, Amount /*refunded*/, String /*status: None/Requested/Denied*/)
 ```
+
+### Refunds and disputes
+
+A buyer calls `request_refund` on their own order, recording a reason on-chain; the merchant then
+either `approve_refund`s (full or partial, paid straight out of that product's revenue vault — a
+merchant can also call this proactively, without a prior request) or `deny_refund`s, with their own
+reason recorded too, so neither side of a disagreement is a black box.
+
+If the merchant refuses a legitimate request — or the revenue's already been `claim_revenue`d out
+of the vault, so there's nothing left in `storefront` to refund from — the buyer's recourse is the
+merchant's stake: the registry owner reviews the on-chain trail (`RefundRequested`/`RefundDenied`
+events) and calls `merchant_registry.resolve_dispute`, which slashes the merchant's stake and pays
+it directly to the buyer instead of into the treasury, or `dismiss_dispute` if the merchant's
+denial holds up, which records that ruling with no funds moving. This is what makes the stake a
+real guarantee for buyers, not just a punitive fine on merchants.
 
 ### `contracts/subscription`
 
@@ -236,11 +259,11 @@ example templates use) — not mocks.
 ```
 $ cargo +1.97 test -p tari_engine --test merchant_registry --test subscription --test storefront
 
-running 10 tests (merchant_registry.rs)
-test result: ok. 10 passed; 0 failed
+running 13 tests (merchant_registry.rs)
+test result: ok. 13 passed; 0 failed
 
-running 7 tests (storefront.rs)
-test result: ok. 7 passed; 0 failed
+running 15 tests (storefront.rs)
+test result: ok. 15 passed; 0 failed
 
 running 6 tests (subscription.rs)
 test result: ok. 6 passed; 0 failed
@@ -250,11 +273,16 @@ Covered: registration + badge minting + tier calculation, stake-too-low rejectio
 added stake, `get_min_stake` reflects the deployer's chosen minimum, exit + stake return,
 cancelling a pending exit request (and rejecting a cancel with no pending request), `reject_exit`
 confiscating the full stake with the reason recorded on-chain (and rejecting a reject on a still-active
-merchant), slashing; buying a product from an unregistered merchant rejected, wrong payment
+merchant), slashing, `resolve_dispute` paying the caller out of a merchant's stake and recalculating
+their tier (and rejecting an award above what's staked), `dismiss_dispute` recording a ruling with
+no funds moved; buying a product from an unregistered merchant rejected, wrong payment
 amount/resource rejected, buying twice accumulates `order_count` and revenue and records each buyer,
 `claim_revenue` restricted to the product's merchant and drains the vault, buying after the merchant
-requests exit is rejected; wrong-amount subscription rejected, activity flips correctly across
-`advance_period`, renewing from a different account than the one that subscribed is rejected, and
+requests exit is rejected, a buyer requesting and the merchant approving a refund, denying a refund
+request with a reason, a merchant approving a refund with no prior request, over-refund rejected,
+only the buyer/merchant being allowed to request/approve/deny, denying with nothing pending rejected,
+partial refunds accumulating up to the order's original price; wrong-amount subscription rejected,
+activity flips correctly across `advance_period`, renewing from a different account than the one that subscribed is rejected, and
 both subscribing and renewing after the merchant requests exit are rejected.
 
 ### Reproducing the tests yourself

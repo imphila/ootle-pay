@@ -113,7 +113,11 @@
   table.data th { text-align: left; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.66rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); padding: 0 10px 8px 0; border-bottom: 1px solid var(--border); font-weight: 500; }
   table.data td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; vertical-align: middle; }
   table.data tr:last-child td { border-bottom: none; }
-  table.data .actions { display: flex; gap: 6px; }
+  table.data .actions { display: flex; gap: 6px; align-items: center; }
+  table.data input.refund-amt, table.data input.refund-reason { width: 90px; margin: 0; padding: 5px 7px; font-size: 0.78rem; }
+  table.data input.refund-reason { width: 150px; }
+  .pill { font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .pill.pending { background: var(--pending-bg); color: var(--pending); }
   .empty-note { font-size: 0.84rem; color: var(--text-dim); padding: 8px 0; }
   .overflow { overflow-x: auto; }
 
@@ -253,6 +257,25 @@
 
     <div class="card">
       <div class="card-head">
+        <h2>Refund requests</h2>
+        <button class="ghost" id="refreshRefundsBtn">Refresh</button>
+      </div>
+      <p class="card-note">Buyers can request a refund on any order. Approving pays them back out
+        of that product's revenue vault (this fails if you've already claimed the revenue — deny
+        with a reason instead, and settle it directly or via the registry's dispute process). You
+        need the buyer's <b>account address</b> (not just their public key) to pay them — ask them
+        for it, or check the order on your side channel.</p>
+      <div class="overflow">
+        <table class="data" id="refundsTable" style="display:none">
+          <thead><tr><th>Product</th><th>Order</th><th>Buyer</th><th>Amount owed</th><th>Reason</th><th>Action</th></tr></thead>
+          <tbody id="refundsTbody"></tbody>
+        </table>
+      </div>
+      <div class="empty-note" id="refundsEmpty">No pending refund requests.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
         <h2>Recent activity</h2>
         <button class="ghost" id="refreshFeedBtn">Refresh</button>
       </div>
@@ -388,6 +411,7 @@
       await refreshMerchantStatus();
       await refreshDashboard();
       refreshTierThresholds();
+      refreshRefundRequests();
     } catch (err) {
       setStatus(statusEl, "Failed: " + err.message, "err");
       btn.disabled = false;
@@ -709,9 +733,132 @@
     }
   }
 
+  // ── Refund requests: every RefundRequested event against one of my products, with its live
+  //    status pulled from get_order_info - a RefundRequested event never disappears, but the
+  //    status does once I've acted on it, so that's the source of truth for what's still pending. ──
+  async function refreshRefundRequests() {
+    const table = document.getElementById("refundsTable");
+    const tbody = document.getElementById("refundsTbody");
+    const empty = document.getElementById("refundsEmpty");
+    empty.textContent = "Loading…";
+    empty.style.display = "block";
+    table.style.display = "none";
+    try {
+      const storeEvents = await fetchEvents(STOREFRONT);
+      const myProductIds = new Set(
+        storeEvents.filter((e) => e.topic === "Storefront.ProductCreated" && e.payload.merchant === accountPublicKey)
+          .map((e) => e.payload.product_id)
+      );
+      const catalog = loadCatalog();
+      const requested = storeEvents.filter((e) => e.topic === "Storefront.RefundRequested" && myProductIds.has(e.payload.product_id));
+      // De-dupe to the latest request per (product, order) - a buyer can request again after a denial.
+      const byOrder = new Map();
+      for (const e of requested) byOrder.set(`${e.payload.product_id}:${e.payload.order_id}`, e);
+
+      const entries = [...byOrder.values()];
+      const infos = await Promise.all(entries.map(async (e) => {
+        try {
+          const infoRaw = await dryRun(
+            `fn main() {\n    let store = var!["store"];\n    store.get_order_info(${e.payload.product_id}u32, ${e.payload.order_id}u32);\n}`,
+            { store: STOREFRONT }
+          );
+          return readScalar(infoRaw);
+        } catch { return null; }
+      }));
+
+      const pending = entries
+        .map((e, i) => ({ event: e, info: infos[i] }))
+        .filter(({ info }) => info && info[3] === "Requested");
+
+      if (pending.length === 0) { empty.textContent = "No pending refund requests."; empty.style.display = "block"; return; }
+      empty.style.display = "none";
+      table.style.display = "table";
+      tbody.innerHTML = "";
+      for (const { event, info } of pending) {
+        const productId = event.payload.product_id;
+        const orderId = event.payload.order_id;
+        const [, amount, refunded] = info;
+        const owed = Number(amount) - Number(refunded);
+        const name = catalog.products[productId] || `Product #${productId}`;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${name}</td>
+          <td>#${orderId}</td>
+          <td>${short(event.payload.buyer)}</td>
+          <td>${fmtTari(owed)}</td>
+          <td>${escapeHtml(event.payload.reason)}</td>
+          <td>
+            <div class="actions">
+              <input class="refund-amt" type="number" value="${(owed / 1_000_000)}" data-refund-amt="${productId}:${orderId}" title="Amount to refund (tTARI)" />
+              <input class="refund-reason" placeholder="buyer's account_..." data-refund-account="${productId}:${orderId}" />
+              <button class="ghost" data-approve-refund="${productId}:${orderId}">Approve</button>
+            </div>
+            <div class="actions" style="margin-top:6px">
+              <input class="refund-reason" placeholder="reason for denying..." data-deny-reason="${productId}:${orderId}" />
+              <button class="ghost" data-deny-refund="${productId}:${orderId}">Deny</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+      tbody.querySelectorAll("[data-approve-refund]").forEach((btn) => btn.addEventListener("click", () => {
+        const key = btn.dataset.approveRefund;
+        const [productId, orderId] = key.split(":");
+        const amount = tbody.querySelector(`[data-refund-amt="${key}"]`).value;
+        const buyerAccount = tbody.querySelector(`[data-refund-account="${key}"]`).value.trim();
+        if (!buyerAccount) { alert("Enter the buyer's account address to pay the refund into."); return; }
+        approveRefund(productId, orderId, amount, buyerAccount);
+      }));
+      tbody.querySelectorAll("[data-deny-refund]").forEach((btn) => btn.addEventListener("click", () => {
+        const key = btn.dataset.denyRefund;
+        const [productId, orderId] = key.split(":");
+        const reason = tbody.querySelector(`[data-deny-reason="${key}"]`).value.trim();
+        if (!reason) { alert("Enter a reason - it's recorded on-chain along with the denial."); return; }
+        denyRefund(productId, orderId, reason);
+      }));
+    } catch (err) {
+      empty.textContent = "Failed to load refund requests: " + err.message;
+      empty.style.display = "block";
+    }
+  }
+  // RefundRequested reasons are buyer-supplied free text shown in a merchant-facing table - never
+  // trust them as HTML.
+  function escapeHtml(s) {
+    const div = document.createElement("div");
+    div.textContent = s == null ? "" : String(s);
+    return div.innerHTML;
+  }
+
+  async function approveRefund(productId, orderId, amount, buyerAccount) {
+    if (!confirm(`Refund ${amount} tTARI for order #${orderId}? This cannot be undone.`)) return;
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let store = var!["store"];\n    let buyer_account = var!["buyer_account"];\n    let refund = store.approve_refund(${productId}u32, ${orderId}u32, ${toRaw(amount)}u64);\n    buyer_account.deposit(refund);\n}`,
+        { store: STOREFRONT, buyer_account: buyerAccount }
+      );
+      const failure = extractFailureReason(result);
+      alert(failure ? "Rejected: " + failure : (eventsSummary(result) || "Refunded."));
+      refreshRefundRequests(); refreshDashboard();
+    } catch (err) { alert("Failed: " + err.message); }
+  }
+
+  async function denyRefund(productId, orderId, reason) {
+    if (!confirm(`Deny the refund for order #${orderId}? The reason will be recorded on-chain and visible to the buyer.`)) return;
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let store = var!["store"];\n    store.deny_refund(${productId}u32, ${orderId}u32, ${JSON.stringify(reason)});\n}`,
+        { store: STOREFRONT }
+      );
+      const failure = extractFailureReason(result);
+      alert(failure ? "Rejected: " + failure : (eventsSummary(result) || "Denied."));
+      refreshRefundRequests();
+    } catch (err) { alert("Failed: " + err.message); }
+  }
+
   document.getElementById("refreshProductsBtn").addEventListener("click", refreshDashboard);
   document.getElementById("refreshPlansBtn").addEventListener("click", refreshDashboard);
   document.getElementById("refreshFeedBtn").addEventListener("click", refreshDashboard);
+  document.getElementById("refreshRefundsBtn").addEventListener("click", refreshRefundRequests);
 
   document.getElementById("copyPkBtn").addEventListener("click", async () => {
     const btn = document.getElementById("copyPkBtn");

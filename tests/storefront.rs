@@ -97,6 +97,28 @@ fn buy(setup: &mut Setup, product_id: u32, amount: u64) {
     );
 }
 
+/// Buys `product_id` from a fresh, funded account, returning that account/secret/pk so a refund
+/// flow can be driven from the same buyer afterwards.
+fn buy_and_return_buyer(
+    setup: &mut Setup,
+    product_id: u32,
+    amount: u64,
+) -> (ComponentAddress, RistrettoSecretKey, RistrettoPublicKeyBytes) {
+    let (payer, proof, payer_secret) = setup.test.create_funded_account();
+    let payer_pk = proof.to_public_key().unwrap();
+    setup.test.execute_expect_success(
+        setup
+            .test
+            .transaction()
+            .call_method(payer, "withdraw", args![TARI_TOKEN, Amount::from(amount)])
+            .put_last_instruction_output_on_workspace("payment")
+            .call_method(setup.storefront, "buy", args![product_id, Workspace("payment")])
+            .build_and_seal(&payer_secret),
+        vec![],
+    );
+    (payer, payer_secret, payer_pk)
+}
+
 fn buy_expect_failure(setup: &mut Setup, product_id: u32, amount: u64) -> String {
     let (payer, _proof, payer_secret) = setup.test.create_funded_account();
     let reason = setup.test.execute_expect_failure(
@@ -310,4 +332,293 @@ fn merchant_can_claim_revenue_and_a_second_claim_drains_nothing_more() {
         .test
         .call_method::<Amount>(merchant_account, "balance", args![TARI_TOKEN], vec![]);
     assert_eq!(balance_after_second_claim, balance_after);
+}
+
+#[test]
+fn buyer_can_request_a_refund_and_merchant_can_approve_it() {
+    let mut setup = setup();
+    let (_, merchant_secret, merchant_pk) = register_merchant(&mut setup);
+    let product_id = create_product(&mut setup, merchant_pk);
+    let (buyer, buyer_secret, _) = buy_and_return_buyer(&mut setup, product_id, PRICE);
+    let order_id = 1u32;
+
+    setup.test.execute_expect_success(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "request_refund", args![
+                product_id,
+                order_id,
+                "Wrong size".to_string()
+            ])
+            .build_and_seal(&buyer_secret),
+        vec![],
+    );
+
+    let balance_before = setup.test.call_method::<Amount>(buyer, "balance", args![TARI_TOKEN], vec![]);
+    setup.test.execute_expect_success(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "approve_refund", args![product_id, order_id, Amount::from(PRICE)])
+            .put_last_instruction_output_on_workspace("refund")
+            .call_method(buyer, "deposit", args![Workspace("refund")])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+    let balance_after = setup.test.call_method::<Amount>(buyer, "balance", args![TARI_TOKEN], vec![]);
+    assert_eq!(balance_after, balance_before + Amount::from(PRICE));
+
+    let (_, amount, refunded, status) = setup.test.call_method::<(RistrettoPublicKeyBytes, Amount, Amount, String)>(
+        setup.storefront,
+        "get_order_info",
+        args![product_id, order_id],
+        vec![],
+    );
+    assert_eq!(amount, Amount::from(PRICE));
+    assert_eq!(refunded, Amount::from(PRICE));
+    assert_eq!(status, "None");
+
+    let (_, _, revenue_after) =
+        setup
+            .test
+            .call_method::<(Amount, u32, Amount)>(setup.storefront, "get_product_info", args![product_id], vec![]);
+    assert_eq!(revenue_after, Amount::ZERO);
+}
+
+#[test]
+fn merchant_can_deny_a_refund_request_with_a_reason() {
+    let mut setup = setup();
+    let (_, merchant_secret, merchant_pk) = register_merchant(&mut setup);
+    let product_id = create_product(&mut setup, merchant_pk);
+    let (_, buyer_secret, buyer_pk) = buy_and_return_buyer(&mut setup, product_id, PRICE);
+    let order_id = 1u32;
+
+    setup.test.execute_expect_success(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "request_refund", args![
+                product_id,
+                order_id,
+                "Item never arrived".to_string()
+            ])
+            .build_and_seal(&buyer_secret),
+        vec![],
+    );
+
+    let result = setup.test.execute_expect_success(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "deny_refund", args![
+                product_id,
+                order_id,
+                "Tracking shows delivered".to_string()
+            ])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+
+    let event = result
+        .finalize
+        .events
+        .iter()
+        .find(|e| e.topic() == "Storefront.RefundDenied")
+        .expect("RefundDenied event not found");
+    assert_eq!(event.get_payload("buyer").unwrap(), buyer_pk.to_string());
+    assert_eq!(event.get_payload("reason").unwrap(), "Tracking shows delivered");
+
+    let (_, _, _, status) = setup.test.call_method::<(RistrettoPublicKeyBytes, Amount, Amount, String)>(
+        setup.storefront,
+        "get_order_info",
+        args![product_id, order_id],
+        vec![],
+    );
+    assert_eq!(status, "Denied");
+}
+
+#[test]
+fn merchant_can_approve_a_refund_without_a_prior_request() {
+    let mut setup = setup();
+    let (_, merchant_secret, merchant_pk) = register_merchant(&mut setup);
+    let product_id = create_product(&mut setup, merchant_pk);
+    let (buyer, _buyer_secret, _) = buy_and_return_buyer(&mut setup, product_id, PRICE);
+    let order_id = 1u32;
+
+    // No request_refund call at all - the merchant proactively refunds.
+    setup.test.execute_expect_success(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "approve_refund", args![product_id, order_id, Amount::from(PRICE)])
+            .put_last_instruction_output_on_workspace("refund")
+            .call_method(buyer, "deposit", args![Workspace("refund")])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+
+    let (_, _, refunded, _) = setup.test.call_method::<(RistrettoPublicKeyBytes, Amount, Amount, String)>(
+        setup.storefront,
+        "get_order_info",
+        args![product_id, order_id],
+        vec![],
+    );
+    assert_eq!(refunded, Amount::from(PRICE));
+}
+
+#[test]
+fn approving_more_than_the_remaining_refundable_amount_is_rejected() {
+    let mut setup = setup();
+    let (_, merchant_secret, merchant_pk) = register_merchant(&mut setup);
+    let product_id = create_product(&mut setup, merchant_pk);
+    let (_, _buyer_secret, _) = buy_and_return_buyer(&mut setup, product_id, PRICE);
+    let order_id = 1u32;
+
+    let reason = setup.test.execute_expect_failure(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "approve_refund", args![
+                product_id,
+                order_id,
+                Amount::from(PRICE + 1)
+            ])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+    assert_reject_reason(reason, "Refund exceeds the order's remaining refundable amount");
+}
+
+#[test]
+fn only_the_buyer_can_request_a_refund() {
+    let mut setup = setup();
+    let (_, _merchant_secret, merchant_pk) = register_merchant(&mut setup);
+    let product_id = create_product(&mut setup, merchant_pk);
+    let (_, _buyer_secret, _) = buy_and_return_buyer(&mut setup, product_id, PRICE);
+    let order_id = 1u32;
+
+    let (_impostor, _proof, impostor_secret) = setup.test.create_funded_account();
+    let reason = setup.test.execute_expect_failure(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "request_refund", args![
+                product_id,
+                order_id,
+                "not mine".to_string()
+            ])
+            .build_and_seal(&impostor_secret),
+        vec![],
+    );
+    assert_reject_reason(reason, "Only the order's buyer can request a refund");
+}
+
+#[test]
+fn only_the_merchant_can_approve_or_deny_a_refund() {
+    let mut setup = setup();
+    let (_, _merchant_secret, merchant_pk) = register_merchant(&mut setup);
+    let product_id = create_product(&mut setup, merchant_pk);
+    let (_, _buyer_secret, _) = buy_and_return_buyer(&mut setup, product_id, PRICE);
+    let order_id = 1u32;
+
+    let (_impostor, _proof, impostor_secret) = setup.test.create_funded_account();
+    let reason = setup.test.execute_expect_failure(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "approve_refund", args![product_id, order_id, Amount::from(PRICE)])
+            .build_and_seal(&impostor_secret),
+        vec![],
+    );
+    assert_reject_reason(reason, "Only the product's merchant can approve a refund");
+
+    let reason = setup.test.execute_expect_failure(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "deny_refund", args![product_id, order_id, "nope".to_string()])
+            .build_and_seal(&impostor_secret),
+        vec![],
+    );
+    assert_reject_reason(reason, "Only the product's merchant can deny a refund");
+}
+
+#[test]
+fn denying_without_a_pending_refund_request_is_rejected() {
+    let mut setup = setup();
+    let (_, merchant_secret, merchant_pk) = register_merchant(&mut setup);
+    let product_id = create_product(&mut setup, merchant_pk);
+    let (_, _buyer_secret, _) = buy_and_return_buyer(&mut setup, product_id, PRICE);
+    let order_id = 1u32;
+
+    let reason = setup.test.execute_expect_failure(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "deny_refund", args![product_id, order_id, "nothing pending".to_string()])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+    assert_reject_reason(reason, "No pending refund request for this order");
+}
+
+#[test]
+fn partial_refunds_accumulate_and_a_second_full_refund_is_capped() {
+    let mut setup = setup();
+    let (_, merchant_secret, merchant_pk) = register_merchant(&mut setup);
+    let product_id = create_product(&mut setup, merchant_pk);
+    let (buyer, _buyer_secret, _) = buy_and_return_buyer(&mut setup, product_id, PRICE);
+    let order_id = 1u32;
+
+    // Refund half.
+    setup.test.execute_expect_success(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "approve_refund", args![
+                product_id,
+                order_id,
+                Amount::from(PRICE / 2)
+            ])
+            .put_last_instruction_output_on_workspace("refund")
+            .call_method(buyer, "deposit", args![Workspace("refund")])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+
+    // Trying to refund the full original price again overruns what's left.
+    let reason = setup.test.execute_expect_failure(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "approve_refund", args![product_id, order_id, Amount::from(PRICE)])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+    assert_reject_reason(reason, "Refund exceeds the order's remaining refundable amount");
+
+    // But refunding exactly what's left works.
+    setup.test.execute_expect_success(
+        setup
+            .test
+            .transaction()
+            .call_method(setup.storefront, "approve_refund", args![
+                product_id,
+                order_id,
+                Amount::from(PRICE - PRICE / 2)
+            ])
+            .put_last_instruction_output_on_workspace("refund")
+            .call_method(buyer, "deposit", args![Workspace("refund")])
+            .build_and_seal(&merchant_secret),
+        vec![],
+    );
+
+    let (_, amount, refunded, _) = setup.test.call_method::<(RistrettoPublicKeyBytes, Amount, Amount, String)>(
+        setup.storefront,
+        "get_order_info",
+        args![product_id, order_id],
+        vec![],
+    );
+    assert_eq!(refunded, amount);
 }

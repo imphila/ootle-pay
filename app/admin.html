@@ -108,6 +108,7 @@
   table.data tr:last-child td { border-bottom: none; }
   table.data .actions { display: flex; gap: 6px; align-items: center; }
   table.data input.slash-amt { width: 80px; margin: 0; padding: 5px 7px; font-size: 0.78rem; }
+  table.data input.dispute-reason { width: 170px; margin: 0; padding: 5px 7px; font-size: 0.78rem; }
   .pill { font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
   .pill.active { background: var(--ok-bg); color: var(--ok); }
   .pill.inactive { background: var(--pending-bg); color: var(--pending); }
@@ -178,6 +179,27 @@
     </div>
 
     <div class="card">
+      <div class="card-head">
+        <h2>Disputes</h2>
+        <button class="ghost" id="refreshDisputesBtn">Refresh</button>
+      </div>
+      <p class="card-note">Refund requests the merchant denied (<code>Storefront.RefundDenied</code>),
+        cross-checked against <code>get_order_info</code> so a request the merchant later approved
+        anyway doesn't show up here. <b>Resolve</b> slashes the merchant's stake and pays it
+        straight to the buyer's account instead of into the treasury - use it when the buyer's
+        request checks out. <b>Dismiss</b> records a ruling for the merchant without moving any
+        funds. Either way keep the <code>[order P/O]</code> tag at the start of your reason - it's
+        how this list knows the dispute has already been handled and won't show it again.</p>
+      <div class="overflow">
+        <table class="data" id="disputesTable" style="display:none">
+          <thead><tr><th>Merchant</th><th>Product</th><th>Order</th><th>Buyer</th><th>Amount</th><th>Merchant's reason</th><th>Ruling</th></tr></thead>
+          <tbody id="disputesTbody"></tbody>
+        </table>
+      </div>
+      <div class="empty-note" id="disputesEmpty">Loading…</div>
+    </div>
+
+    <div class="card">
       <div class="card-head"><h2>Treasury</h2></div>
       <p class="card-note">Accumulated from slashed stakes. Owner-only to withdraw.</p>
       <button id="withdrawTreasuryBtn" class="secondary">Withdraw treasury</button>
@@ -189,6 +211,7 @@
 <script>
   const OWNER_PUBLIC_KEY = "44304ffa52412b5a6be4b8da0523e755858b0194023c724dd254d404fefe4a73";
   const REGISTRY = "component_07ef58a3d3dbaa9fe6195bd2929c6dac4161e1aa3e2e29cd5bcdb05c7e8b8254";
+  const STOREFRONT = "component_671d3fee859d76520e8c334954203ff39d12bcd73993dcb3bada8f519d22dc3e";
   const INDEXER = "https://ootle-indexer-a.tari.com";
 
   let daemonUrl = "", authToken = "", accountAddress = "", accountPublicKey = "", rpcId = 1;
@@ -255,6 +278,18 @@
   }
   function setStatus(el, text, kind) { el.textContent = text; el.className = "status" + (kind ? " " + kind : ""); }
   function short(pk) { return pk ? pk.slice(0, 10) + "…" + pk.slice(-8) : ""; }
+  // Refund-denial reasons are merchant-supplied free text shown in this admin table - never trust
+  // them as HTML.
+  function escapeHtml(s) {
+    const div = document.createElement("div");
+    div.textContent = s == null ? "" : String(s);
+    return div.innerHTML;
+  }
+  // Tags a dispute reason with its (product, order) so the disputes list can tell a resolved/
+  // dismissed dispute apart from a still-open one purely from MerchantRegistry's event log -
+  // resolve_dispute/dismiss_dispute don't know about storefront orders, so this tag is the only
+  // link between the two. Keep it at the start of whatever reason you type in.
+  function disputeTag(productId, orderId) { return `[order ${productId}/${orderId}]`; }
   // On-chain Amounts are raw microTARI (divisibility 6, same as the wallet's own balance display).
   function fmtTari(raw) {
     const n = Number(raw);
@@ -292,6 +327,7 @@
       document.getElementById("ownerWarning").style.display = accountPublicKey === OWNER_PUBLIC_KEY ? "none" : "block";
 
       await refreshAll();
+      refreshDisputes();
     } catch (err) {
       setStatus(statusEl, "Failed: " + err.message, "err");
       btn.disabled = false;
@@ -365,6 +401,141 @@
     }));
   }
 
+  // ── Disputes: refund requests the merchant denied, still open (not since re-requested and
+  //    approved after all). A ruling is only findable later via the [order P/O] tag in its own
+  //    reason string, since resolve_dispute/dismiss_dispute live in a different component that
+  //    knows nothing about storefront orders - this tag is the only link between the two. ──
+  async function refreshDisputes() {
+    const table = document.getElementById("disputesTable");
+    const tbody = document.getElementById("disputesTbody");
+    const empty = document.getElementById("disputesEmpty");
+    empty.textContent = "Loading…";
+    empty.style.display = "block";
+    table.style.display = "none";
+    try {
+      const [storeEvents, registryEvents] = await Promise.all([fetchEvents(STOREFRONT), fetchEvents(REGISTRY)]);
+
+      const productMerchant = new Map();
+      storeEvents
+        .filter((e) => e.topic === "Storefront.ProductCreated")
+        .forEach((e) => productMerchant.set(e.payload.product_id, e.payload.merchant));
+
+      const denied = storeEvents.filter((e) => e.topic === "Storefront.RefundDenied");
+      const byOrder = new Map();
+      for (const e of denied) byOrder.set(`${e.payload.product_id}:${e.payload.order_id}`, e);
+
+      const ruled = new Set();
+      registryEvents
+        .filter((e) => e.topic === "MerchantRegistry.DisputeResolved" || e.topic === "MerchantRegistry.DisputeDismissed")
+        .forEach((e) => {
+          const m = /^\[order (\S+)\/(\S+)\]/.exec(e.payload.reason || "");
+          if (m) ruled.add(`${m[1]}:${m[2]}`);
+        });
+
+      const entries = [...byOrder.entries()].filter(([key]) => !ruled.has(key)).map(([, e]) => e);
+
+      // Fire every candidate order's get_order_info in parallel - sequential awaits here would
+      // otherwise add several seconds of dry-run round-trip latency per dispute.
+      const infos = await Promise.all(entries.map(async (e) => {
+        try {
+          const infoRaw = await dryRun(
+            `fn main() {\n    let store = var!["store"];\n    store.get_order_info(${e.payload.product_id}u32, ${e.payload.order_id}u32);\n}`,
+            { store: STOREFRONT }
+          );
+          return readScalar(infoRaw);
+        } catch { return null; }
+      }));
+
+      // A denial only stays "open" while the order is still in the Denied state - if the merchant
+      // went on to approve it anyway (outside this flow), it drops off here too.
+      const open = entries
+        .map((e, i) => ({ event: e, info: infos[i] }))
+        .filter(({ info }) => info && info[3] === "Denied");
+
+      if (open.length === 0) { empty.textContent = "No open disputes."; empty.style.display = "block"; return; }
+      empty.style.display = "none";
+      table.style.display = "table";
+      tbody.innerHTML = "";
+      for (const { event, info } of open) {
+        const productId = event.payload.product_id;
+        const orderId = event.payload.order_id;
+        const key = `${productId}:${orderId}`;
+        const merchant = productMerchant.get(productId) || "?";
+        const owed = Number(info[1]) - Number(info[2]);
+        const tag = disputeTag(productId, orderId);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${short(merchant)}</td>
+          <td>#${productId}</td>
+          <td>#${orderId}</td>
+          <td>${short(event.payload.buyer)}</td>
+          <td>${fmtTari(owed)}</td>
+          <td>${escapeHtml(event.payload.reason)}</td>
+          <td>
+            <div class="actions"><input class="dispute-reason" value="${tag} " data-dispute-reason="${key}" title="Ruling reason - recorded on-chain, keep the tag" /></div>
+            <div class="actions" style="margin-top:6px">
+              <input class="slash-amt" type="number" value="${owed / 1_000_000}" data-resolve-amt="${key}" title="Amount to award the buyer (tTARI)" />
+              <input class="dispute-reason" placeholder="buyer's account_..." data-resolve-account="${key}" />
+              <button class="ghost" data-resolve-dispute="${key}" data-merchant="${merchant}">Resolve (pay buyer)</button>
+            </div>
+            <div class="actions" style="margin-top:6px">
+              <button class="ghost" data-dismiss-dispute="${key}" data-merchant="${merchant}">Dismiss</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+      tbody.querySelectorAll("[data-resolve-dispute]").forEach((btn) => btn.addEventListener("click", () => {
+        const key = btn.dataset.resolveDispute;
+        const [productId, orderId] = key.split(":");
+        const reason = tbody.querySelector(`[data-dispute-reason="${key}"]`).value.trim();
+        const amount = tbody.querySelector(`[data-resolve-amt="${key}"]`).value;
+        const buyerAccount = tbody.querySelector(`[data-resolve-account="${key}"]`).value.trim();
+        const tag = disputeTag(productId, orderId);
+        if (!reason.startsWith(tag)) { alert(`Keep "${tag}" at the start of the reason.`); return; }
+        if (!buyerAccount) { alert("Enter the buyer's account address to pay the award into."); return; }
+        resolveDispute(btn.dataset.merchant, amount, buyerAccount, reason);
+      }));
+      tbody.querySelectorAll("[data-dismiss-dispute]").forEach((btn) => btn.addEventListener("click", () => {
+        const key = btn.dataset.dismissDispute;
+        const [productId, orderId] = key.split(":");
+        const reason = tbody.querySelector(`[data-dispute-reason="${key}"]`).value.trim();
+        const tag = disputeTag(productId, orderId);
+        if (!reason.startsWith(tag)) { alert(`Keep "${tag}" at the start of the reason.`); return; }
+        dismissDispute(btn.dataset.merchant, reason);
+      }));
+    } catch (err) {
+      empty.textContent = "Failed to load disputes: " + err.message;
+      empty.style.display = "block";
+    }
+  }
+
+  async function resolveDispute(merchant, amount, buyerAccount, reason) {
+    if (!confirm(`Slash ${amount} tTARI from ${short(merchant)} and pay it directly to the buyer? This cannot be undone.`)) return;
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    let buyer_account = var!["buyer_account"];\n    let payout = registry.resolve_dispute(PublicKey("${merchant}"), ${toRaw(amount)}u64, ${JSON.stringify(reason)});\n    buyer_account.deposit(payout);\n}`,
+        { registry: REGISTRY, buyer_account: buyerAccount }
+      );
+      const failure = extractFailureReason(result);
+      alert(failure ? "Rejected: " + failure : (eventsSummary(result) || "Resolved - buyer paid."));
+      refreshDisputes(); refreshAll();
+    } catch (err) { alert("Failed: " + err.message); }
+  }
+
+  async function dismissDispute(merchant, reason) {
+    if (!confirm(`Dismiss this dispute in ${short(merchant)}'s favor? No funds move.`)) return;
+    try {
+      const result = await submitManifestAndWait(
+        `fn main() {\n    let registry = var!["registry"];\n    registry.dismiss_dispute(PublicKey("${merchant}"), ${JSON.stringify(reason)});\n}`,
+        { registry: REGISTRY }
+      );
+      const failure = extractFailureReason(result);
+      alert(failure ? "Rejected: " + failure : (eventsSummary(result) || "Dismissed."));
+      refreshDisputes();
+    } catch (err) { alert("Failed: " + err.message); }
+  }
+
   async function slashMerchant(pk, amount) {
     if (!confirm(`Slash ${amount} tTARI from ${short(pk)}? This cannot be undone.`)) return;
     try {
@@ -419,4 +590,5 @@
   });
 
   document.getElementById("refreshBtn").addEventListener("click", refreshAll);
+  document.getElementById("refreshDisputesBtn").addEventListener("click", refreshDisputes);
 </script>

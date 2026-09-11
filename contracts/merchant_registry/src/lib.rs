@@ -219,6 +219,47 @@ mod merchant_registry_template {
             ]);
         }
 
+        /// Resolves a disputed refund in the buyer's favor: slashes `amount` from `merchant`'s stake
+        /// and pays it directly to the caller (the arbiter's transaction routes it to the buyer's
+        /// account), instead of into the treasury like `slash` does. This is what backs a refund once
+        /// a storefront/subscription's own revenue vault can't cover it (e.g. the merchant already
+        /// claimed it) or the merchant simply refuses a legitimate request - the stake becomes a real
+        /// guarantee for buyers, not just a punitive fine. Recomputes (and possibly downgrades) the
+        /// merchant's tier same as `slash`.
+        ///
+        /// Callable by: the registry owner, after investigating a dispute recorded by a storefront's
+        /// or subscription's `RefundRequested` / `RefundDenied` events.
+        pub fn resolve_dispute(&mut self, merchant: RistrettoPublicKeyBytes, amount: Amount, reason: String) -> Bucket {
+            let entry = self.merchants.get_mut(&merchant).expect("Not registered");
+            assert!(amount > Amount::ZERO, "Amount must be greater than zero");
+            assert!(amount <= entry.staked, "Cannot award more than the merchant has staked");
+
+            entry.staked = entry.staked - amount;
+            entry.tier = Self::tier_for_stake(self.min_stake, entry.staked);
+            let payout = self.stakes.withdraw(amount);
+
+            emit_event("DisputeResolved", metadata![
+                "merchant" => merchant.to_string(),
+                "amount" => amount.to_string(),
+                "remaining_stake" => entry.staked.to_string(),
+                "reason" => reason,
+            ]);
+            payout
+        }
+
+        /// Dismisses a dispute in the merchant's favor - no funds move, but the decision (and reason)
+        /// is recorded on-chain for symmetry with `resolve_dispute`, so a merchant's side of a dispute
+        /// is auditable too, not just their denial.
+        ///
+        /// Callable by: the registry owner.
+        pub fn dismiss_dispute(&mut self, merchant: RistrettoPublicKeyBytes, reason: String) {
+            assert!(self.merchants.contains_key(&merchant), "Not registered");
+            emit_event("DisputeDismissed", metadata![
+                "merchant" => merchant.to_string(),
+                "reason" => reason,
+            ]);
+        }
+
         pub fn treasury_balance(&self) -> Amount {
             self.treasury.balance()
         }
