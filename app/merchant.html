@@ -124,10 +124,6 @@
   /* ── Dashboard shell ──────────────────────────────────────────────────── */
   #appPanels { display: none; }
   .shell { max-width: 980px; margin: 0 auto; padding: 36px 28px 80px; }
-  .dash-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
-  .dash-head h1 { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 3px; }
-  .dash-head .who { font-size: 0.78rem; color: var(--text-dim); font-family: "IBM Plex Mono", ui-monospace, monospace; }
-  .tier-pill { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.72rem; padding: 4px 12px; border-radius: 999px; background: var(--accent-dim); color: var(--accent); font-weight: 600; border: 1px solid var(--accent-border); }
 
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 26px; box-shadow: var(--shadow-xs); }
   @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
@@ -171,6 +167,48 @@
   form.inline { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
   form.inline > div { flex: 1; min-width: 140px; }
   form.inline button { margin-top: 5px; white-space: nowrap; }
+
+  /* ── Shop-facing visual language shared with pay.html: deterministic gradient "cover art"
+     for anything without a real image, and tier-colored badges instead of a flat pill. ── */
+  .cover { position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #fff; }
+  .cover::before {
+    content: ""; position: absolute; inset: 0;
+    background-image: radial-gradient(circle at 22px 22px, rgba(255,255,255,.16) 1.5px, transparent 1.5px);
+    background-size: 16px 16px;
+  }
+  .cover .glyph { position: relative; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.15); }
+  .cover .glyph svg { width: 26px; height: 26px; }
+
+  .badge { font-size: 0.66rem; padding: 3px 9px; border-radius: 999px; font-weight: 600; background: var(--surface-2); color: var(--text-dim); letter-spacing: .01em; }
+  .badge.tier-basic { background: var(--surface-2); color: var(--text-dim); }
+  .badge.tier-standard { background: color-mix(in srgb, #2f6fe0 14%, transparent); color: #2f6fe0; }
+  .badge.tier-premium { background: linear-gradient(100deg, #f6d365, #d9a441); color: #4a3208; font-weight: 700; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge.tier-standard { color: #86b0f7; } }
+  :root[data-theme="dark"] .badge.tier-standard { color: #86b0f7; }
+
+  .shop-hero { border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 24px; border: 1px solid var(--border); }
+  .shop-hero .cover { height: 92px; }
+  .shop-hero .cover .glyph { font-size: 1.3rem; }
+  .shop-hero-body { background: var(--surface); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .shop-hero-name { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.92rem; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .shop-hero-badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+  .product-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow-xs); transition: border-color .15s ease, box-shadow .2s ease; display: flex; flex-direction: column;
+  }
+  .product-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+  .product-card .cover { height: 92px; }
+  .product-body { padding: 13px 14px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .product-name { font-weight: 600; font-size: 0.87rem; line-height: 1.35; }
+  .product-price { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.85rem; color: var(--accent); font-weight: 700; }
+  .stat-row { display: flex; gap: 10px; border-top: 1px dashed var(--border); padding-top: 9px; margin-top: 1px; }
+  .stat-row > div { flex: 1; min-width: 0; }
+  .stat-num { display: block; font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 700; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+  .stat-lbl { display: block; font-size: 0.62rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin-top: 1px; }
+  .product-body .actions { display: flex; gap: 6px; margin-top: auto; padding-top: 4px; }
+  .product-body .actions button { flex: 1; }
 </style>
 
 <nav class="top">
@@ -203,12 +241,20 @@
 
 <div id="appPanels">
   <div class="shell">
-    <div class="dash-head">
-      <div>
-        <h1>Dashboard</h1>
-        <div class="who">Merchant <span id="accountPk" class="mono"></span> <button id="copyPkBtn" class="ghost" type="button" style="margin-left:6px" title="Copy your full merchant public key">Copy ID</button> <button id="copyShopLinkBtn" class="ghost" type="button" style="margin-left:2px" title="Copy a link customers can use to shop with you">Copy shop link</button></div>
+    <div class="shop-hero">
+      <div class="cover" id="heroCover"><span class="glyph" id="heroGlyph"></span></div>
+      <div class="shop-hero-body">
+        <div>
+          <div class="shop-hero-name">
+            Merchant <span id="accountPk" class="mono"></span>
+            <button id="copyPkBtn" class="ghost" type="button" title="Copy your full merchant public key">Copy ID</button>
+            <button id="copyShopLinkBtn" class="ghost" type="button" title="Copy a link customers can use to shop with you">Copy shop link</button>
+          </div>
+        </div>
+        <div class="shop-hero-badges">
+          <span class="badge" id="tierPill">checking…</span>
+        </div>
       </div>
-      <span class="tier-pill" id="tierPill">checking…</span>
     </div>
 
     <div class="stats">
@@ -264,12 +310,7 @@
         <button id="createProductBtn">Create product</button>
       </form>
       <div id="createProductStatus" class="status"></div>
-      <div class="overflow" style="margin-top:16px">
-        <table class="data" id="productsTable" style="display:none">
-          <thead><tr><th>Product</th><th>Price</th><th>Orders</th><th>Revenue (all-time)</th><th>Claimable now</th><th></th></tr></thead>
-          <tbody id="productsTbody"></tbody>
-        </table>
-      </div>
+      <div class="product-grid" id="productGrid" style="margin-top:16px"></div>
       <div class="empty-note" id="productsEmpty">No products yet — create one above.</div>
     </div>
 
@@ -286,12 +327,7 @@
         <button id="createPlanBtn">Create plan</button>
       </form>
       <div id="createPlanStatus" class="status"></div>
-      <div class="overflow" style="margin-top:16px">
-        <table class="data" id="plansTable" style="display:none">
-          <thead><tr><th>Plan</th><th>Price/period</th><th>Period</th><th>Subscribers</th><th>Revenue (all-time)</th><th></th></tr></thead>
-          <tbody id="plansTbody"></tbody>
-        </table>
-      </div>
+      <div class="product-grid" id="planGrid" style="margin-top:16px"></div>
       <div class="empty-note" id="plansEmpty">No plans yet — create one above.</div>
     </div>
 
@@ -411,6 +447,35 @@
       </div>
     `;
   }
+  // Deterministic "cover art" for a product/plan/shop from its name/key - same technique pay.html
+  // uses, so a merchant's own dashboard matches what buyers see on their shop page.
+  function hashSeed(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+  function gradientFor(seed) {
+    const h = hashSeed(seed);
+    const hue1 = h % 360;
+    const hue2 = (hue1 + 46 + (h % 50)) % 360;
+    return `linear-gradient(135deg, hsl(${hue1} 72% 58%), hsl(${hue2} 68% 42%))`;
+  }
+  const PRODUCT_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.5 12 3 3.5 7.5 12 12l8.5-4.5Z"/><path d="M3.5 7.5v9L12 21l8.5-4.5v-9"/><path d="M12 12v9"/></svg>`;
+  const PLAN_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg>`;
+  function coverHtml(seed, iconSvg, extra = "") {
+    return `<div class="cover" style="background:${gradientFor(seed)}"><span class="glyph">${iconSvg}</span>${extra}</div>`;
+  }
+  function tierClass(tier) {
+    return tier === "Premium" ? "tier-premium" : tier === "Standard" ? "tier-standard" : "tier-basic";
+  }
+  function skeletonGrid(n = 2) {
+    return Array.from({ length: n }, () => `
+      <div style="display:flex; flex-direction:column; align-items:stretch; height:150px; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px;">
+        <span class="skel" style="flex:1; border-radius:8px;"></span>
+        <span class="skel" style="width:70%; height:12px;"></span>
+      </div>
+    `).join("");
+  }
   // On-chain Amounts are raw microTARI (divisibility 6, same as the wallet's own balance display).
   function fmtTari(raw) {
     const n = Number(raw);
@@ -453,6 +518,8 @@
       accountAddress = account.component_address;
       accountPublicKey = account.owner_public_key;
       document.getElementById("accountPk").textContent = short(accountPublicKey);
+      document.getElementById("heroCover").style.background = gradientFor(accountPublicKey);
+      document.getElementById("heroGlyph").textContent = accountPublicKey.slice(0, 2).toUpperCase();
 
       document.getElementById("connectPanel").style.display = "none";
       document.getElementById("appPanels").style.display = "block";
@@ -497,6 +564,7 @@
       if (!info) throw new Error("not registered");
       const [staked, tier, active] = info;
       pill.textContent = active ? `${tier} tier` : `${tier} tier — exit requested`;
+      pill.className = "badge " + tierClass(tier);
       exitSection.style.display = "block";
       if (active) {
         exitStatusLine.textContent = `Active — staked ${fmtTari(staked)}.`;
@@ -509,6 +577,7 @@
       }
     } catch {
       pill.textContent = "not registered";
+      pill.className = "badge";
       exitSection.style.display = "none";
     }
   }
@@ -700,17 +769,16 @@
     document.getElementById("statAllTime").textContent = fmtTari(allTime);
     document.getElementById("statOrderCount").textContent = `${myOrders.length} order(s), ${myRenewals.length} renewal(s)`;
 
-    // ── Products table ──
+    // ── Products grid ──
     const productIds = [...new Set(myProductsCreated.map((e) => e.payload.product_id))];
-    const productsTable = document.getElementById("productsTable");
-    const productsTbody = document.getElementById("productsTbody");
+    const productGrid = document.getElementById("productGrid");
     const productsEmpty = document.getElementById("productsEmpty");
     if (productIds.length === 0) {
-      productsTable.style.display = "none";
+      productGrid.style.display = "none";
       productsEmpty.innerHTML = emptyState("No products yet — create one above.");
       productsEmpty.style.display = "block";
     } else {
-      productsEmpty.style.display = "none"; productsTable.style.display = "table";
+      productsEmpty.style.display = "none"; productGrid.style.display = "grid";
       // Fire every product's get_product_info in parallel - sequential awaits here would
       // otherwise add several seconds of dry-run round-trip latency per product.
       const claimables = await Promise.all(productIds.map(async (id) => {
@@ -720,32 +788,45 @@
           return info ? info[2] : "?";
         } catch { return "?"; }
       }));
-      productsTbody.innerHTML = "";
+      productGrid.innerHTML = "";
       productIds.forEach((id, i) => {
         const created = myProductsCreated.find((e) => e.payload.product_id === id);
         const orders = myOrders.filter((e) => e.payload.product_id === id);
         const revenue = orders.reduce((sum, o) => sum + Number(o.payload.amount), 0);
         const claimable = claimables[i];
         const name = (created && created.payload.name) || catalog.products[id] || `Product #${id}`;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${name}</td><td>${fmtTari(created.payload.price)}</td><td>${orders.length}</td><td>${fmtTari(revenue)}</td><td>${fmtTari(claimable)}</td><td class="actions"><button class="ghost" data-claim-product="${id}">Claim</button></td>`;
-        productsTbody.appendChild(tr);
+        const card = document.createElement("div");
+        card.className = "product-card";
+        card.innerHTML = `
+          ${coverHtml(name + id, PRODUCT_ICON)}
+          <div class="product-body">
+            <div class="product-name">${escapeHtml(name)}</div>
+            <div class="product-price">${fmtTari(created.payload.price)}</div>
+            <div class="stat-row">
+              <div><span class="stat-num">${orders.length}</span><span class="stat-lbl">orders</span></div>
+              <div><span class="stat-num">${fmtTari(revenue)}</span><span class="stat-lbl">revenue</span></div>
+            </div>
+            <div class="actions">
+              <button class="ghost" data-claim-product="${id}">Claim ${fmtTari(claimable)}</button>
+            </div>
+          </div>
+        `;
+        productGrid.appendChild(card);
       });
-      productsTbody.querySelectorAll("[data-claim-product]").forEach((btn) => btn.addEventListener("click", () => claimProductRevenue(Number(btn.dataset.claimProduct))));
+      productGrid.querySelectorAll("[data-claim-product]").forEach((btn) => btn.addEventListener("click", () => claimProductRevenue(Number(btn.dataset.claimProduct))));
     }
 
-    // ── Plans table ──
+    // ── Plans grid ──
     const planIds = [...myPlanIds];
-    const plansTable = document.getElementById("plansTable");
-    const plansTbody = document.getElementById("plansTbody");
+    const planGrid = document.getElementById("planGrid");
     const plansEmpty = document.getElementById("plansEmpty");
     if (planIds.length === 0) {
-      plansTable.style.display = "none";
+      planGrid.style.display = "none";
       plansEmpty.innerHTML = emptyState("No plans yet — create one above.");
       plansEmpty.style.display = "block";
     } else {
-      plansEmpty.style.display = "none"; plansTable.style.display = "table";
-      plansTbody.innerHTML = "";
+      plansEmpty.style.display = "none"; planGrid.style.display = "grid";
+      planGrid.innerHTML = "";
       for (const id of planIds) {
         const created = myPlansCreated.find((e) => e.payload.plan_id === id);
         const renewals = myRenewals.filter((e) => e.payload.plan_id === id);
@@ -753,12 +834,28 @@
         const revenue = renewals.length * Number(created.payload.price);
         const currentPeriod = renewals.length ? Math.max(...renewals.map((e) => Number(e.payload.paid_until_period))) - 1 : 0;
         const name = (created && created.payload.name) || catalog.plans[id] || `Plan #${id}`;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${name}</td><td>${fmtTari(created.payload.price)}</td><td>${currentPeriod}</td><td>${subscribers}</td><td>${fmtTari(revenue)}</td><td class="actions"><button class="ghost" data-advance-plan="${id}">Advance period</button> <button class="ghost" data-claim-plan="${id}">Claim</button></td>`;
-        plansTbody.appendChild(tr);
+        const card = document.createElement("div");
+        card.className = "product-card";
+        card.innerHTML = `
+          ${coverHtml(name + id, PLAN_ICON)}
+          <div class="product-body">
+            <div class="product-name">${escapeHtml(name)}</div>
+            <div class="product-price">${fmtTari(created.payload.price)} <span style="color:var(--text-faint); font-weight:500;">/ period</span></div>
+            <div class="stat-row">
+              <div><span class="stat-num">${currentPeriod}</span><span class="stat-lbl">period</span></div>
+              <div><span class="stat-num">${subscribers}</span><span class="stat-lbl">subs</span></div>
+              <div><span class="stat-num">${fmtTari(revenue)}</span><span class="stat-lbl">revenue</span></div>
+            </div>
+            <div class="actions">
+              <button class="ghost" data-advance-plan="${id}">Advance</button>
+              <button class="ghost" data-claim-plan="${id}">Claim</button>
+            </div>
+          </div>
+        `;
+        planGrid.appendChild(card);
       }
-      plansTbody.querySelectorAll("[data-advance-plan]").forEach((btn) => btn.addEventListener("click", () => advancePeriod(Number(btn.dataset.advancePlan))));
-      plansTbody.querySelectorAll("[data-claim-plan]").forEach((btn) => btn.addEventListener("click", () => claimPlanRevenue(Number(btn.dataset.claimPlan))));
+      planGrid.querySelectorAll("[data-advance-plan]").forEach((btn) => btn.addEventListener("click", () => advancePeriod(Number(btn.dataset.advancePlan))));
+      planGrid.querySelectorAll("[data-claim-plan]").forEach((btn) => btn.addEventListener("click", () => claimPlanRevenue(Number(btn.dataset.claimPlan))));
     }
 
     // ── Activity feed ──
