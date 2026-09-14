@@ -53,17 +53,18 @@
   code { font-family: "IBM Plex Mono", ui-monospace, monospace; }
 
   nav.top {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 28px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px;
+    padding: 14px 20px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace;
     position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px);
   }
-  .wordmark { font-size: 0.86rem; font-weight: 600; letter-spacing: -0.01em; }
-  nav.top .links { display: flex; gap: 24px; font-size: 0.8rem; }
-  nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; transition: color .15s ease, border-color .15s ease; }
+  .wordmark { font-size: 0.86rem; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+  nav.top .links { display: flex; gap: 18px; font-size: 0.8rem; flex-wrap: wrap; order: 3; flex-basis: 100%; justify-content: center; }
+  nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; transition: color .15s ease, border-color .15s ease; white-space: nowrap; }
   nav.top .links a:hover { color: var(--text); }
   nav.top .links a.active { color: var(--text); border-color: var(--accent); }
-  nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); }
+  nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); white-space: nowrap; }
   nav.top .net .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
+  @media (min-width: 640px) { nav.top .links { order: 0; flex-basis: auto; } }
 
   .shell { max-width: 560px; margin: 0 auto; padding: 44px 24px 80px; }
 
@@ -144,46 +145,20 @@
   }
   @keyframes shimmer { to { transform: translateX(100%); } }
 
-  .merchant-row {
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 17px;
-    margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;
-    box-shadow: var(--shadow-xs); transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
-  }
-  .merchant-row:hover { border-color: var(--accent-border); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
-  .merchant-row .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.85rem; }
-  .merchant-row .who { display: flex; align-items: center; gap: 10px; }
-  .merchant-row .avatar {
-    width: 30px; height: 30px; border-radius: 50%; background: var(--accent-dim); color: var(--accent);
-    display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; font-family: "IBM Plex Mono", monospace; flex-shrink: 0;
-  }
-  .merchant-row .chev { color: var(--text-faint); font-size: 0.9rem; margin-left: 4px; }
-
-  .shop-head { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 20px; flex-wrap: wrap; gap: 8px; }
-  .shop-head .who { font-size: 0.9rem; font-weight: 600; font-family: "IBM Plex Mono", ui-monospace, monospace; }
-
-  .section { margin-top: 30px; }
+  .section { margin-top: 34px; }
   .section:first-of-type { margin-top: 0; }
-  .section h2 { font-size: 0.94rem; font-weight: 600; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  .section h2 { font-size: 1.02rem; font-weight: 700; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
   .section h2 .count { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 500; font-size: 0.72rem; color: var(--text-faint); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; }
-
-  .item-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px;
-    margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;
-    box-shadow: var(--shadow-xs); transition: border-color .15s ease, box-shadow .15s ease;
-  }
-  .item-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
-  .item-info { display: flex; flex-direction: column; gap: 5px; }
-  .item-name { font-weight: 600; font-size: 0.92rem; display: flex; align-items: center; gap: 8px; }
-  .item-price { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.84rem; color: var(--accent); font-weight: 600; }
-  .item-actions { display: flex; align-items: center; gap: 10px; }
-  .item-status { font-size: 0.72rem; color: var(--text-dim); font-family: "IBM Plex Mono", ui-monospace, monospace; text-align: right; max-width: 160px; }
 
   .badge { font-size: 0.66rem; padding: 3px 9px; border-radius: 999px; font-weight: 600; background: var(--surface-2); color: var(--text-dim); letter-spacing: .01em; }
   .badge.active { background: var(--ok-bg); color: var(--ok); }
   .badge.pending { background: var(--pending-bg); color: var(--pending); }
   .badge.err { background: var(--err-bg); color: var(--err); }
 
-  .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 10px; box-shadow: var(--shadow-xs); }
+  .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px 16px 16px; margin-bottom: 10px; box-shadow: var(--shadow-xs); display: flex; gap: 14px; }
+  .order-thumb { width: 46px; height: 46px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.92); }
+  .order-thumb svg { width: 20px; height: 20px; }
+  .order-body { flex: 1; min-width: 0; }
   .order-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
   .order-name { font-weight: 600; font-size: 0.9rem; }
   .order-meta { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.76rem; color: var(--text-dim); margin-top: 4px; }
@@ -191,6 +166,67 @@
   .order-refund-form { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   .order-refund-form input { flex: 1; min-width: 160px; margin: 0; }
   .order-refund-form button { flex-shrink: 0; }
+
+  /* ── Wide "marketplace" shell for browse/shop views ─────────────────────── */
+  .shell-wide { max-width: 1120px; margin: 0 auto; padding: 36px 28px 90px; }
+  .shell-narrow { max-width: 480px; margin: 0 auto; padding: 60px 24px 80px; }
+
+  .market-head { margin-bottom: 26px; }
+  .market-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 6px; }
+  .market-sub { color: var(--text-dim); font-size: 0.9rem; max-width: 62ch; line-height: 1.6; margin: 0; }
+  .market-sub code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
+
+  /* Deterministic gradient "cover art" for shops/products (no real images) - element supplies
+     the gradient inline via style, these classes just handle layout + the glyph on top. */
+  .cover { position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #fff; }
+  .cover::before {
+    content: ""; position: absolute; inset: 0;
+    background-image: radial-gradient(circle at 22px 22px, rgba(255,255,255,.16) 1.5px, transparent 1.5px);
+    background-size: 16px 16px;
+  }
+  .cover .glyph { position: relative; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.15); }
+
+  .merchant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
+  .shop-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+    cursor: pointer; box-shadow: var(--shadow-xs); transition: border-color .15s ease, box-shadow .2s ease, transform .2s ease;
+  }
+  .shop-card:hover { border-color: var(--accent-border); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .shop-card .cover { height: 84px; }
+  .shop-card .cover .glyph { font-size: 1.5rem; }
+  .shop-card-body { padding: 14px 16px 16px; }
+  .shop-card-name { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.86rem; font-weight: 600; margin-bottom: 9px; }
+  .shop-card-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+  .badge.tier-basic { background: var(--surface-2); color: var(--text-dim); }
+  .badge.tier-standard { background: color-mix(in srgb, #2f6fe0 14%, transparent); color: #2f6fe0; }
+  .badge.tier-premium { background: linear-gradient(100deg, #f6d365, #d9a441); color: #4a3208; font-weight: 700; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge.tier-standard { color: #86b0f7; } }
+  :root[data-theme="dark"] .badge.tier-standard { color: #86b0f7; }
+
+  .shop-hero { border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 24px; border: 1px solid var(--border); }
+  .shop-hero .cover { height: 108px; }
+  .shop-hero-body { background: var(--surface); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .shop-hero-name { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1rem; font-weight: 700; }
+  .shop-hero-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+  .product-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow-xs); transition: border-color .15s ease, box-shadow .2s ease, transform .2s ease; display: flex; flex-direction: column;
+  }
+  .product-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+  .product-card .cover { height: 110px; }
+  .product-card .cover .glyph svg { width: 28px; height: 28px; opacity: .95; }
+  .product-card .cover .owned-ribbon {
+    position: absolute; top: 8px; right: 8px; font-size: 0.62rem; font-weight: 700; letter-spacing: .02em;
+    background: rgba(0,0,0,.4); color: #fff; padding: 3px 8px; border-radius: 999px; backdrop-filter: blur(2px);
+  }
+  .product-body { padding: 13px 14px 14px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+  .product-name { font-weight: 600; font-size: 0.87rem; line-height: 1.35; }
+  .product-price { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.88rem; color: var(--accent); font-weight: 700; }
+  .product-body button { margin-top: auto; width: 100%; }
+  .product-status { font-size: 0.7rem; color: var(--text-dim); font-family: "IBM Plex Mono", ui-monospace, monospace; min-height: 1.2em; }
 </style>
 
 <nav class="top">
@@ -203,7 +239,7 @@
   <div class="net"><span class="dot"></span> esme testnet</div>
 </nav>
 
-<div class="shell">
+<div class="shell-narrow" id="connectShell">
   <h1 class="page">Pay</h1>
   <p class="lede">Browse staked, accountable merchants and pay them directly from your own wallet — no platform custody, no intermediary account.</p>
 
@@ -213,44 +249,49 @@
     <button id="connectBtn" class="primary">Connect wallet</button>
     <div id="connectStatus" class="status"></div>
   </div>
+</div>
 
-  <div id="appPanels">
-    <div class="balance">
-      Buy as <select id="accountSelect" style="display:inline-block; width:auto; margin:0 0 0 4px; padding:2px 6px; font-size:0.8rem;"></select>
+<div class="shell-wide" id="appPanels" style="display:none">
+  <div class="balance">
+    Buy as <select id="accountSelect" style="display:inline-block; width:auto; margin:0 0 0 4px; padding:2px 6px; font-size:0.8rem;"></select>
+  </div>
+  <div class="balance" id="walletBalance">—</div>
+
+  <div id="browseView">
+    <div class="market-head">
+      <h1 class="market-title">Marketplace</h1>
+      <p class="market-sub">Every seller here staked a bond in <code>merchant_registry</code> — pick a shop to browse, straight from the chain, no catalog anyone can fake.</p>
     </div>
-    <div class="balance" id="walletBalance">—</div>
+    <div class="merchant-grid" id="merchantList"></div>
+  </div>
 
-    <div id="browseView">
-      <div class="callout">Every merchant here staked a bond in <code>merchant_registry</code> to
-        list — pick one to see what they sell, straight from the chain.</div>
-      <div id="merchantList"></div>
-    </div>
-
-    <div id="shopView" style="display:none">
-      <button id="backToBrowse" class="ghost" type="button">← All merchants</button>
-      <div class="shop-head">
-        <div class="who">Shop <span id="shopMerchantPk" class="mono"></span></div>
-        <span>
+  <div id="shopView" style="display:none">
+    <button id="backToBrowse" class="ghost" type="button">← All shops</button>
+    <div class="shop-hero">
+      <div class="cover" id="shopCover"><span class="glyph" id="shopGlyph"></span></div>
+      <div class="shop-hero-body">
+        <div class="shop-hero-name mono" id="shopMerchantPk"></div>
+        <div class="shop-hero-badges">
           <span class="badge" id="shopTier"></span>
           <span class="badge" id="shopStake"></span>
-        </span>
+        </div>
       </div>
-      <div id="shopExitWarning" class="callout" style="display:none; border-color:var(--err); color:var(--err)"></div>
+    </div>
+    <div id="shopExitWarning" class="callout" style="display:none; border-color:var(--err); color:var(--err)"></div>
 
-      <div class="section">
-        <h2>Products</h2>
-        <div id="productList"></div>
-      </div>
+    <div class="section">
+      <h2>Products</h2>
+      <div class="product-grid" id="productList"></div>
+    </div>
 
-      <div class="section">
-        <h2>Subscription plans</h2>
-        <div id="planList"></div>
-      </div>
+    <div class="section">
+      <h2>Subscription plans</h2>
+      <div class="product-grid" id="planList"></div>
+    </div>
 
-      <div class="section">
-        <h2>Your orders here</h2>
-        <div id="orderList"></div>
-      </div>
+    <div class="section">
+      <h2>Your orders here</h2>
+      <div id="orderList"></div>
     </div>
   </div>
 </div>
@@ -342,6 +383,14 @@
       </div>
     `).join("");
   }
+  function skeletonGrid(n = 3) {
+    return Array.from({ length: n }, () => `
+      <div class="skeleton-row" style="flex-direction:column; align-items:stretch; height:150px; gap:10px;">
+        <span class="skel" style="flex:1; border-radius:8px;"></span>
+        <span class="skel" style="width:70%; height:12px;"></span>
+      </div>
+    `).join("");
+  }
   function emptyState(message) {
     return `
       <div class="empty-state">
@@ -349,6 +398,28 @@
         <div class="msg">${message}</div>
       </div>
     `;
+  }
+  // Deterministic "cover art" for a shop/product from its name/key, since nothing here has a real
+  // uploaded image - a stable gradient (same seed always renders the same way) reads as designed,
+  // not as a broken <img>.
+  function hashSeed(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+  function gradientFor(seed) {
+    const h = hashSeed(seed);
+    const hue1 = h % 360;
+    const hue2 = (hue1 + 46 + (h % 50)) % 360;
+    return `linear-gradient(135deg, hsl(${hue1} 72% 58%), hsl(${hue2} 68% 42%))`;
+  }
+  const PRODUCT_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.5 12 3 3.5 7.5 12 12l8.5-4.5Z"/><path d="M3.5 7.5v9L12 21l8.5-4.5v-9"/><path d="M12 12v9"/></svg>`;
+  const PLAN_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6v-2a4 4 0 0 1 4-4h14"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v2a4 4 0 0 1-4 4H3"/></svg>`;
+  function coverHtml(seed, iconSvg, extra = "") {
+    return `<div class="cover" style="background:${gradientFor(seed)}"><span class="glyph">${iconSvg}</span>${extra}</div>`;
+  }
+  function tierClass(tier) {
+    return tier === "Premium" ? "tier-premium" : tier === "Standard" ? "tier-standard" : "tier-basic";
   }
 
   async function fetchEvents(substateId) {
@@ -407,7 +478,7 @@
       applyAccountSelection(accounts.accounts);
       select.addEventListener("change", () => applyAccountSelection(accounts.accounts));
 
-      document.getElementById("connectPanel").style.display = "none";
+      document.getElementById("connectShell").style.display = "none";
       document.getElementById("appPanels").style.display = "block";
 
       const merchantId = params.get("id");
@@ -425,7 +496,7 @@
     document.getElementById("shopView").style.display = "none";
     document.getElementById("browseView").style.display = "block";
     const listEl = document.getElementById("merchantList");
-    listEl.innerHTML = skeletonRows(3);
+    listEl.innerHTML = skeletonGrid(3);
     try {
       const events = await fetchEvents(REGISTRY);
       const registered = events.filter((e) => e.topic === "MerchantRegistry.MerchantRegistered");
@@ -445,14 +516,20 @@
       listEl.innerHTML = "";
       if (merchants.length === 0) { listEl.innerHTML = emptyState("No merchants registered yet — check back once someone stakes in."); return; }
       for (const m of merchants) {
-        const row = document.createElement("div");
-        row.className = "merchant-row";
-        row.innerHTML = `
-          <span class="who"><span class="avatar">${escapeHtml(m.pk.slice(0, 2).toUpperCase())}</span><span class="mono">${short(m.pk)}</span></span>
-          <span><span class="badge active">${m.tier}</span> <span class="badge">${fmtTari(m.staked)}</span><span class="chev">›</span></span>
+        const card = document.createElement("div");
+        card.className = "shop-card";
+        card.innerHTML = `
+          ${coverHtml(m.pk, escapeHtml(m.pk.slice(0, 2).toUpperCase()))}
+          <div class="shop-card-body">
+            <div class="shop-card-name">${short(m.pk)}</div>
+            <div class="shop-card-meta">
+              <span class="badge ${tierClass(m.tier)}">${m.tier}</span>
+              <span class="badge">${fmtTari(m.staked)} staked</span>
+            </div>
+          </div>
         `;
-        row.addEventListener("click", () => { location.href = `pay.html?id=${m.pk}`; });
-        listEl.appendChild(row);
+        card.addEventListener("click", () => { location.href = `pay.html?id=${m.pk}`; });
+        listEl.appendChild(card);
       }
     } catch (err) {
       listEl.innerHTML = "";
@@ -468,14 +545,17 @@
     document.getElementById("browseView").style.display = "none";
     document.getElementById("shopView").style.display = "block";
     document.getElementById("shopMerchantPk").textContent = short(merchantId);
+    document.getElementById("shopCover").style.background = gradientFor(merchantId);
+    document.getElementById("shopGlyph").textContent = merchantId.slice(0, 2).toUpperCase();
     document.getElementById("shopTier").textContent = "";
+    document.getElementById("shopTier").className = "badge";
     document.getElementById("shopStake").textContent = "";
     document.getElementById("shopExitWarning").style.display = "none";
 
     const productListEl = document.getElementById("productList");
     const planListEl = document.getElementById("planList");
-    productListEl.innerHTML = skeletonRows(2);
-    planListEl.innerHTML = skeletonRows(2);
+    productListEl.innerHTML = skeletonGrid(2);
+    planListEl.innerHTML = skeletonGrid(2);
 
     const [tierInfo, storeEvents, subEvents] = await Promise.all([
       dryRun(`fn main() {\n    let registry = var!["registry"];\n    registry.get_merchant_info(PublicKey("${merchantId}"));\n}`, { registry: REGISTRY })
@@ -487,6 +567,7 @@
     if (tierInfo) {
       const [staked, tier, active] = tierInfo;
       document.getElementById("shopTier").textContent = tier + " tier";
+      document.getElementById("shopTier").className = "badge " + tierClass(tier);
       document.getElementById("shopStake").textContent = fmtTari(staked) + " staked";
       if (!active) {
         const warn = document.getElementById("shopExitWarning");
@@ -508,15 +589,14 @@
     } else {
       for (const p of products) {
         const card = document.createElement("div");
-        card.className = "item-card";
+        card.className = "product-card";
         card.innerHTML = `
-          <div class="item-info">
-            <div class="item-name">${escapeHtml(p.name)}</div>
-            <div class="item-price">${fmtTari(p.price)}</div>
-          </div>
-          <div class="item-actions">
-            <div class="item-status" data-status-product="${p.id}"></div>
-            <button class="secondary" data-buy="${p.id}" data-price="${p.price}" type="button">Buy</button>
+          ${coverHtml(p.name + p.id, PRODUCT_ICON)}
+          <div class="product-body">
+            <div class="product-name">${escapeHtml(p.name)}</div>
+            <div class="product-price">${fmtTari(p.price)}</div>
+            <div class="product-status" data-status-product="${p.id}"></div>
+            <button class="primary" data-buy="${p.id}" data-price="${p.price}" type="button">Buy now</button>
           </div>
         `;
         productListEl.appendChild(card);
@@ -540,15 +620,15 @@
         const plan = plans[i];
         const active = actives[i];
         const card = document.createElement("div");
-        card.className = "item-card";
+        card.className = "product-card";
+        const ribbon = active ? `<span class="owned-ribbon">Active</span>` : "";
         card.innerHTML = `
-          <div class="item-info">
-            <div class="item-name">${escapeHtml(plan.name)} <span class="badge ${active ? "active" : ""}">${active ? "Active" : "Not subscribed"}</span></div>
-            <div class="item-price">${fmtTari(plan.price)} / period</div>
-          </div>
-          <div class="item-actions">
-            <div class="item-status" data-status-plan="${plan.id}"></div>
-            <button class="secondary" data-sub="${plan.id}" data-price="${plan.price}" data-active="${active}" type="button">${active ? "Renew" : "Subscribe"}</button>
+          ${coverHtml(plan.name + plan.id, PLAN_ICON, ribbon)}
+          <div class="product-body">
+            <div class="product-name">${escapeHtml(plan.name)}</div>
+            <div class="product-price">${fmtTari(plan.price)} <span style="color:var(--text-faint); font-weight:500;">/ period</span></div>
+            <div class="product-status" data-status-plan="${plan.id}"></div>
+            <button class="${active ? "secondary" : "primary"}" data-sub="${plan.id}" data-price="${plan.price}" data-active="${active}" type="button">${active ? "Renew" : "Subscribe"}</button>
           </div>
         `;
         planListEl.appendChild(card);
@@ -620,20 +700,23 @@
 
       const canRequest = refunded < amount && status !== "Requested";
       card.innerHTML = `
-        <div class="order-head">
-          <div>
-            <div class="order-name">${escapeHtml(name)}</div>
-            <div class="order-meta">Order #${orderId} · ${fmtTari(amount)}${refunded > 0 ? ` · ${fmtTari(refunded)} refunded so far` : ""}</div>
+        <div class="order-thumb" style="background:${gradientFor(name + productId)}">${PRODUCT_ICON}</div>
+        <div class="order-body">
+          <div class="order-head">
+            <div>
+              <div class="order-name">${escapeHtml(name)}</div>
+              <div class="order-meta">Order #${orderId} · ${fmtTari(amount)}${refunded > 0 ? ` · ${fmtTari(refunded)} refunded so far` : ""}</div>
+            </div>
+            ${badge}
           </div>
-          ${badge}
+          ${extra}
+          ${canRequest ? `
+            <div class="order-refund-form">
+              <input type="text" placeholder="Reason for the refund request" data-refund-reason="${productId}:${orderId}" />
+              <button class="secondary" data-request-refund="${productId}:${orderId}" type="button">${status === "Denied" ? "Request again" : "Request refund"}</button>
+            </div>
+          ` : ""}
         </div>
-        ${extra}
-        ${canRequest ? `
-          <div class="order-refund-form">
-            <input type="text" placeholder="Reason for the refund request" data-refund-reason="${productId}:${orderId}" />
-            <button class="secondary" data-request-refund="${productId}:${orderId}" type="button">${status === "Denied" ? "Request again" : "Request refund"}</button>
-          </div>
-        ` : ""}
       `;
       listEl.appendChild(card);
     });
@@ -702,8 +785,11 @@
       if (!failure && !isActive) {
         btn.textContent = "Renew";
         btn.dataset.active = "true";
-        btn.parentElement.previousElementSibling.querySelector(".badge").textContent = "Active";
-        btn.parentElement.previousElementSibling.querySelector(".badge").classList.add("active");
+        btn.className = "secondary";
+        const cover = btn.closest(".product-card").querySelector(".cover");
+        if (cover && !cover.querySelector(".owned-ribbon")) {
+          cover.insertAdjacentHTML("beforeend", `<span class="owned-ribbon">Active</span>`);
+        }
       }
       refreshBalance();
     } catch (err) { statusEl.textContent = "Failed: " + err.message; }
