@@ -156,19 +156,20 @@ Deployed and exercised for real on the Tari Ootle **esme** testnet (via a local
 `tari_ootle_walletd --network esme`, connected to the hosted indexer at
 `https://ootle-indexer-a.tari.com/` — no self-run validator network needed).
 
-> **Status note:** `cancel_exit_request`, `reject_exit`, `get_min_stake`, and the
-> `is_registered` check now inside `storefront.buy`/`subscription.subscribe`/`renew` are
-> code-complete and covered by the test suite below, but not yet redeployed to the addresses
-> listed here — the esme testnet's shared faucet is currently empty, and republishing/
-> reinstantiating costs real (if worthless) tTARI in fees. The addresses and transactions below
-> still reflect the deployment from before this change.
+> **Status note:** redeployed for the refund/dispute feature - `merchant_registry` and
+> `storefront` were republished (new template addresses, since their code changed) and all three
+> components reinstantiated wired together, with `min_stake` lowered to 10 tTARI (from the
+> previous deployment's 1000) so the esme testnet's one-time-per-account faucet grant is actually
+> enough to register and test with. `subscription`'s template is unchanged, so its existing
+> published template was reused for the new component instance - only a fresh `new(registry)` was
+> needed, not a republish.
 
 **Published templates:**
 
 | Contract | Template address |
 |---|---|
-| `MerchantRegistry` | `template_41ab42e3ec32a60355957fa8eda7270be0f5b2b9f76b95bb10111d1c8bf9d241` |
-| `Storefront` | `template_ef0f74e10b9d92fe0a449824a808cfe950542553ce2cf7138d412cfb22f366f7` |
+| `MerchantRegistry` | `template_76a37a3c397868728a24691a932c19c98bb28237c2fe81b9cf7f38e0d7fe0170` |
+| `Storefront` | `template_5bc378695cfa03c7f11f2c1c30924fa88d1134cdb315f1e5e5df8259ca44fe9e` |
 | `SubscriptionManager` | `template_6a03bc20ab8fd89dfd4c97c0fcc6947097412b6b56fbbb94a8804c92fea425ab` |
 
 **Deployed component instances** (wired together — `storefront` and `subscription` both point at
@@ -176,22 +177,21 @@ the same registry):
 
 | Contract | Component address |
 |---|---|
-| `merchant_registry` | `component_07ef58a3d3dbaa9fe6195bd2929c6dac4161e1aa3e2e29cd5bcdb05c7e8b8254` |
-| `storefront` | `component_671d3fee859d76520e8c334954203ff39d12bcd73993dcb3bada8f519d22dc3e` |
-| `subscription` | `component_d4333f6800a25fc05e04fd58d65a63e023b4f93ed1f03d261491f69ec3d34573` |
+| `merchant_registry` | `component_b45eb3d6a220962e1474e87d0e1273fc3b658fa4e35847ab994bf450d19c3dea` |
+| `storefront` | `component_a6eb271f2ebcdb9af140cae127ea0196319d928908d7fecbafc983dc99ba6f79` |
+| `subscription` | `component_767e0e57aa4a3d3506ea1ab8cd258d63600bf5896628ff076a6ada22d9421991` |
 
-**Real transactions exercising every flow:**
+**Real transactions exercising the refund/dispute flow** (this deployment's smoke test — the
+subscription component above is freshly instantiated but only unit-tested so far, not yet
+exercised live since its code didn't change):
 
 | Flow | Transaction id | Result |
 |---|---|---|
-| Register as merchant | `3f2bcc2afcca3e2c5804b158d5d2285e6d7618f37284f6785325fee01fcecc55` | `MerchantRegistry.MerchantRegistered` — tier `Basic` |
-| Create a product | `0fe8557dcaee780b4751e471f40da8cf6878d63e0a8b1695e5602970ce013d31` | `Storefront.ProductCreated {merchant, name: "Ootle Pay Badge", price: 20, product_id: 0}` |
-| Buy that product | `7be93988e998ba89a216a5793524388ee2230fa2df2b9d2d7dfa1a7469f8a3f2` | `Storefront.OrderPlaced {product_id: 0, merchant, buyer, amount: 20, order_number: 1}` |
-| Claim product revenue | `f5b4746dd6ace856fedcf45732e240c859eccabae9e787c23cf38f670d6e10e1` | Vault drained — `get_product_info(0)` afterward read back `(20, 1, 0)` |
-| Create a subscription plan | `457cfb40a106c59ba342bda2285ad78be9bff30ac7c8790e94cd4b606b22917c` | `SubscriptionManager.PlanCreated {merchant, name: "Premium Monthly", plan_id: 0, price: 50}` |
-| Subscribe | `5bee449ccd8c0e13662b9dfd1d1ebdf2d3c2996178c5126cf28ae96c7fff771f` | `SubscriptionRenewed {plan_id: 0, subscriber, paid_until_period: 1}` |
-| Advance the billing period | `08b405a48eedbd0c0d553e6a27580fa85c3fc1acc32425f5353d365910cab76c` | Accepted |
-| Renew | `c3ffd396447c01905619f9fc1c39ad087b173d937edf2b806a4c7bfa59bc76aa` | `SubscriptionRenewed {..., paid_until_period: 2}` — `is_active` read back `true` afterward |
+| Register as merchant | `7d2a29c6c2525721283aa2dae7c36567483b8f5f6ce8967151e91b2090e23c73` | `MerchantRegistry.MerchantRegistered` — tier `Basic` |
+| Create a product | `df1ee18cbd96d80f63d73f483d7d59296061ff66b56064ba61d4c2bd8f11fff8` | `Storefront.ProductCreated {merchant, name: "Smoke test widget", price: 20, product_id: 0}` |
+| Buy that product | `5621e30f200e2137adc61c75a8e30b96b3551e72b4f22d2d52aa29418107dda2` | `Storefront.OrderPlaced {product_id: 0, merchant, buyer, amount: 20, order_number: 1}` |
+| Request a refund | `bcc74baa72c8f5d325a5417122046f693a57e10a5233e4dba4b760a3b7761c22` | `Storefront.RefundRequested {product_id: 0, order_id: 1, buyer, reason: "smoke test - checking the wiring"}` |
+| Approve the refund | `c4abd961a2a1eec5b9d73c9c383d71dbd8290c6b7ae4c57ca946698ebca53c5a` | `Storefront.OrderRefunded {product_id: 0, order_id: 1, buyer, amount: 20, total_refunded: 20}` — buyer's balance credited, `get_order_info(0, 1)` afterward read back `(buyer, 20, 20, "None")` |
 
 These were submitted via the wallet daemon's `transactions.submit_manifest` JSON-RPC method, using
 its Rust-like manifest DSL (parsed with `syn` - e.g. `registry.register(account.withdraw(XTR,
