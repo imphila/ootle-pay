@@ -124,7 +124,7 @@
     background-size: 16px 16px;
   }
   .cover .glyph { position: relative; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.15); }
-  .avatar { width: 28px; height: 28px; border-radius: 50%; font-size: 0.62rem; }
+  .avatar { width: 30px; height: 30px; border-radius: 8px; font-size: 0.4rem; letter-spacing: -.02em; }
 
   .badge { font-size: 0.66rem; padding: 3px 9px; border-radius: 999px; font-weight: 600; background: var(--surface-2); color: var(--text-dim); letter-spacing: .01em; }
   .badge.tier-basic { background: var(--surface-2); color: var(--text-dim); }
@@ -392,7 +392,7 @@
     return tier === "Premium" ? "tier-premium" : tier === "Standard" ? "tier-standard" : "tier-basic";
   }
   function avatarHtml(seed) {
-    return `<span class="cover avatar" style="background:${gradientFor(seed)}"><span class="glyph">${escapeHtml(seed.slice(0, 2).toUpperCase())}</span></span>`;
+    return `<span class="cover avatar" style="background:${gradientFor(seed)}"><span class="glyph">${escapeHtml(seed.slice(-6).toUpperCase())}</span></span>`;
   }
   function emptyState(message) {
     return `

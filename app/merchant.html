@@ -519,7 +519,7 @@
       accountPublicKey = account.owner_public_key;
       document.getElementById("accountPk").textContent = short(accountPublicKey);
       document.getElementById("heroCover").style.background = gradientFor(accountPublicKey);
-      document.getElementById("heroGlyph").textContent = accountPublicKey.slice(0, 2).toUpperCase();
+      document.getElementById("heroGlyph").textContent = accountPublicKey.slice(-6).toUpperCase();
 
       document.getElementById("connectPanel").style.display = "none";
       document.getElementById("appPanels").style.display = "block";

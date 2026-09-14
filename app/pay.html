@@ -519,7 +519,7 @@
         const card = document.createElement("div");
         card.className = "shop-card";
         card.innerHTML = `
-          ${coverHtml(m.pk, escapeHtml(m.pk.slice(0, 2).toUpperCase()))}
+          ${coverHtml(m.pk, escapeHtml(m.pk.slice(-6).toUpperCase()))}
           <div class="shop-card-body">
             <div class="shop-card-name">${short(m.pk)}</div>
             <div class="shop-card-meta">
@@ -546,7 +546,7 @@
     document.getElementById("shopView").style.display = "block";
     document.getElementById("shopMerchantPk").textContent = short(merchantId);
     document.getElementById("shopCover").style.background = gradientFor(merchantId);
-    document.getElementById("shopGlyph").textContent = merchantId.slice(0, 2).toUpperCase();
+    document.getElementById("shopGlyph").textContent = merchantId.slice(-6).toUpperCase();
     document.getElementById("shopTier").textContent = "";
     document.getElementById("shopTier").className = "badge";
     document.getElementById("shopStake").textContent = "";
