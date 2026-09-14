@@ -215,9 +215,9 @@ event, not a real historical timestamp — documented in the app's own UI, not s
 contracts against the deployed components above:
 
 - **`index.html`** — overview and links to `merchant.html`/`pay.html` (not `admin.html`, which is
-  kept off the public nav since it's an owner-only page). Note: its "Live on the esme testnet" proof
-  section still shows addresses/transactions from the deployment *before* the refund/dispute
-  redeployment below — illustrative only, not the live components the other three pages use.
+  kept off the public nav since it's an owner-only page). Its "Live on the esme testnet" proof
+  section and "How it works" walkthrough are kept in sync with the current deployment and the
+  refund/dispute flow, same as the "Live deployment" section below.
 - **`merchant.html`** — the merchant console: register/stake (with the real Basic/Standard/Premium
   thresholds shown, read from `get_min_stake` rather than hardcoded), create products and
   subscription plans (names go into the `ProductCreated`/`PlanCreated` events, so anyone reading the

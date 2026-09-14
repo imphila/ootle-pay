@@ -5,47 +5,57 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f6f6f9; --surface: #ffffff; --surface-2: #edecf2; --border: #dcdae3;
-    --text: #16141c; --text-dim: #68657a;
+    --bg: #f7f7fa; --surface: #ffffff; --surface-2: #f2f1f6; --border: #e2e0e8; --text-faint: #948fa0;
+    --text: #16141c; --text-dim: #63606f;
     --violet: #6d3fd6; --violet-ink: #ffffff; --violet-wash: #f1ecfc;
     --bronze: #93610d; --bronze-ink: #ffffff; --bronze-wash: #f6eeda;
     --ok: #157a4d;
+    --shadow-xs: 0 1px 2px rgba(22,18,36,.05);
+    --shadow-sm: 0 1px 3px rgba(22,18,36,.06), 0 4px 10px -4px rgba(22,18,36,.07);
+    --radius: 10px; --radius-sm: 7px;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
-      --text: #e9e6f0; --text-dim: #9b96a9;
+      --bg: #0e0c14; --surface: #17141f; --surface-2: #1d1929; --border: #2c2739; --text-faint: #726d80;
+      --text: #eeebf5; --text-dim: #a49fb3;
       --violet: #a480f2; --violet-ink: #17102b; --violet-wash: #211a34;
       --bronze: #dba14a; --bronze-ink: #241a06; --bronze-wash: #2b2110;
       --ok: #4bd39a;
+      --shadow-xs: 0 1px 2px rgba(0,0,0,.3);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.35), 0 4px 12px -4px rgba(0,0,0,.4);
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #100e16; --surface: #18151f; --surface-2: #131019; --border: #2a2632;
-    --text: #e9e6f0; --text-dim: #9b96a9;
+    --bg: #0e0c14; --surface: #17141f; --surface-2: #1d1929; --border: #2c2739; --text-faint: #726d80;
+    --text: #eeebf5; --text-dim: #a49fb3;
     --violet: #a480f2; --violet-ink: #17102b; --violet-wash: #211a34;
     --bronze: #dba14a; --bronze-ink: #241a06; --bronze-wash: #2b2110;
     --ok: #4bd39a;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.3);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.35), 0 4px 12px -4px rgba(0,0,0,.4);
     color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif; }
+  body { background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
   a { color: inherit; }
   code, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
 
   nav.top {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 32px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px;
+    padding: 14px 24px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", ui-monospace, monospace;
+    position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px);
   }
-  .wordmark { font-size: 0.84rem; font-weight: 600; letter-spacing: 0.01em; }
-  nav.top .links { display: flex; gap: 24px; font-size: 0.8rem; }
-  nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; }
+  .wordmark { font-size: 0.84rem; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; }
+  nav.top .links { display: flex; gap: 18px; font-size: 0.8rem; flex-wrap: wrap; order: 3; flex-basis: 100%; justify-content: center; }
+  nav.top .links a { text-decoration: none; color: var(--text-dim); padding: 4px 0; border-bottom: 2px solid transparent; transition: color .15s ease, border-color .15s ease; white-space: nowrap; }
+  nav.top .links a:hover { color: var(--text); }
   nav.top .links a.active { color: var(--text); border-color: var(--violet); }
-  nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); }
-  nav.top .net .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+  nav.top .net { display: flex; align-items: center; gap: 7px; font-size: 0.74rem; color: var(--text-dim); white-space: nowrap; }
+  nav.top .net .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
+  @media (min-width: 640px) { nav.top .links { order: 0; flex-basis: auto; } }
 
   .shell { max-width: 760px; margin: 0 auto; padding: 0 32px; }
   section { padding: 44px 0; border-bottom: 1px solid var(--border); }
@@ -68,7 +78,8 @@
   .receipts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   @media (max-width: 620px) { .receipts { grid-template-columns: 1fr; } }
   .receipt {
-    border: 1px solid var(--border); border-radius: 3px; overflow: hidden; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface);
+    box-shadow: var(--shadow-xs);
   }
   .receipt .head { padding: 12px 16px; font-size: 0.78rem; color: var(--text-dim); border-bottom: 1px solid var(--border); }
   .receipt .head b { color: var(--text); }
@@ -78,7 +89,7 @@
   .receipt .row { padding: 4px 0; }
   .receipt.verified dd { color: var(--ok); }
   .receipt.verified .head { color: var(--ok); }
-  .receipt.verified { border-color: var(--ok); }
+  .receipt.verified { border-color: var(--ok); box-shadow: var(--shadow-sm); }
 
   .flow { display: flex; flex-direction: column; gap: 0; }
   .flow .step { display: grid; grid-template-columns: 28px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--border); }
@@ -105,7 +116,12 @@
   .half.pay .tag { color: var(--violet); }
   .half h2 { font-family: "Fraunces", Georgia, serif; font-size: 1.4rem; font-weight: 600; margin: 6px 0 10px; }
   .half p { font-size: 0.9rem; color: var(--text-dim); margin: 0 0 18px; max-width: 32ch; }
-  .half a.go { text-decoration: none; font-weight: 600; font-size: 0.86rem; padding: 9px 18px; border-radius: 3px; }
+  .half a.go {
+    display: inline-block; text-decoration: none; font-weight: 600; font-size: 0.86rem; padding: 9px 18px;
+    border-radius: var(--radius-sm); transition: transform .1s ease, filter .15s ease; box-shadow: var(--shadow-sm);
+  }
+  .half a.go:hover { filter: brightness(1.06); }
+  .half a.go:active { transform: translateY(1px); }
   .half.merchant a.go { background: var(--bronze); color: var(--bronze-ink); }
   .half.pay a.go { background: var(--violet); color: var(--violet-ink); }
 
@@ -138,12 +154,15 @@
       stake instead of passing KYC. Every order and every subscription renewal is a plain event
       on a public chain, so a merchant's order history and revenue are auditable by anyone — not
       just asserted by a platform.</p>
+    <p>Buyers aren't left with no recourse either — they can request a refund on any order, and if
+      a merchant refuses without cause, the platform can pay the buyer directly out of that
+      merchant's stake. The bond backs the buyer, not just the merchant's reputation.</p>
   </section>
 
   <section>
     <h2 class="kicker">What actually lands on-chain</h2>
     <p style="font-size:0.9rem; color:var(--text-dim); margin:-6px 0 20px; max-width:60ch;">
-      Not a mockup — the real event emitted by transaction <code>7be93988…69f8a3f2</code> on the
+      Not a mockup — the real event emitted by transaction <code>5621e30f…8107dda2</code> on the
       esme testnet, next to what a typical processor keeps locked in a private database.</p>
     <div class="receipts">
       <div class="receipt">
@@ -160,8 +179,8 @@
         <dl>
           <div class="row"><dt>where</dt><dd>public esme ledger</dd></div>
           <div class="row"><dt>product_id</dt><dd>0</dd></div>
-          <div class="row"><dt>merchant</dt><dd>44304ffa…e4a73</dd></div>
-          <div class="row"><dt>buyer</dt><dd>44304ffa…e4a73</dd></div>
+          <div class="row"><dt>merchant</dt><dd>44304ffa…fe4a73</dd></div>
+          <div class="row"><dt>buyer</dt><dd>44304ffa…fe4a73</dd></div>
           <div class="row"><dt>amount</dt><dd>20</dd></div>
           <div class="row"><dt>order_number</dt><dd>1</dd></div>
         </dl>
@@ -200,20 +219,36 @@
             plan revenue into a vault only that plan's merchant can claim.</p>
         </div>
       </div>
+      <div class="step">
+        <div class="n">04</div>
+        <div>
+          <h3>If something's wrong, the buyer can ask for it back</h3>
+          <p>The buyer calls <code>request_refund</code> with a reason, recorded on-chain; the
+            merchant approves it — full or partial — or denies it, with their own reason recorded
+            too. If a denial doesn't hold up, the platform can arbitrate: <code>resolve_dispute</code>
+            slashes the merchant's stake and pays it straight to the buyer instead of into a
+            treasury — the bond isn't just a fine, it's the buyer's actual backstop.</p>
+        </div>
+      </div>
     </div>
   </section>
 
   <section>
     <h2 class="kicker">Live on the esme testnet</h2>
     <div class="proof">
-      <div class="line"><span class="tag">merchant_registry</span><span class="hash">component_07ef58a3…7e8b8254</span></div>
-      <div class="line"><span class="tag">storefront</span><span class="hash">component_671d3fee…9d22dc3e</span></div>
-      <div class="line"><span class="tag">subscription</span><span class="hash">component_d4333f68…c3d34573</span></div>
-      <div class="line"><span class="tag">register tx</span><span class="hash">3f2bcc2a…1fcecc55</span><span class="payload">MerchantRegistered {tier: Basic}</span></div>
-      <div class="line"><span class="tag">create product tx</span><span class="hash">0fe8557d…ce013d31</span><span class="payload">ProductCreated {name: "Ootle Pay Badge", price: 20}</span></div>
-      <div class="line"><span class="tag">buy tx</span><span class="hash">7be93988…69f8a3f2</span><span class="payload">OrderPlaced {amount: 20, order_number: 1}</span></div>
-      <div class="line"><span class="tag">subscribe tx</span><span class="hash">5bee449c…7fff771f</span><span class="payload">SubscriptionRenewed {paid_until_period: 1}</span></div>
+      <div class="line"><span class="tag">merchant_registry</span><span class="hash">component_b45eb3d6…d19c3dea</span></div>
+      <div class="line"><span class="tag">storefront</span><span class="hash">component_a6eb271f…99ba6f79</span></div>
+      <div class="line"><span class="tag">subscription</span><span class="hash">component_767e0e57…d9421991</span></div>
+      <div class="line"><span class="tag">register tx</span><span class="hash">7d2a29c6…90e23c73</span><span class="payload">MerchantRegistered {tier: Basic}</span></div>
+      <div class="line"><span class="tag">create product tx</span><span class="hash">df1ee18c…8f11fff8</span><span class="payload">ProductCreated {name: "Smoke test widget", price: 20}</span></div>
+      <div class="line"><span class="tag">buy tx</span><span class="hash">5621e30f…8107dda2</span><span class="payload">OrderPlaced {amount: 20, order_number: 1}</span></div>
+      <div class="line"><span class="tag">request refund tx</span><span class="hash">bcc74baa…b7761c22</span><span class="payload">RefundRequested {order_id: 1, reason: "smoke test - checking the wiring"}</span></div>
+      <div class="line"><span class="tag">approve refund tx</span><span class="hash">c4abd961…bca53c5a</span><span class="payload">OrderRefunded {amount: 20, total_refunded: 20}</span></div>
     </div>
+    <p style="font-size:0.82rem; color:var(--text-faint); margin:14px 0 0; max-width:60ch;">
+      <code>subscription</code>'s template and logic didn't change with the refund feature, so it
+      hasn't been re-exercised live on this specific component yet — it's still covered by the
+      contract's own test suite (see the repo's README).</p>
   </section>
 </div>
 
@@ -221,13 +256,15 @@
   <div class="half merchant">
     <span class="tag">For businesses</span>
     <h2>Run a storefront</h2>
-    <p>Stake to register, list products and plans, and track every order and dollar in one dashboard.</p>
+    <p>Stake to register, list products and plans, track every order and dollar in one dashboard,
+      and handle refund requests straight from the same console.</p>
     <a class="go" href="https://imphila.github.io/ootle-pay/merchant.html">Open Merchant Console →</a>
   </div>
   <div class="half pay">
     <span class="tag">For customers</span>
     <h2>Pay a merchant</h2>
-    <p>Buy a product outright, or subscribe to a plan — straight from your own wallet, no custodian in between.</p>
+    <p>Buy a product outright, or subscribe to a plan — straight from your own wallet, no custodian
+      in between. Not happy with an order? Request a refund, right from your order history.</p>
     <a class="go" href="https://imphila.github.io/ootle-pay/pay.html">Open Pay →</a>
   </div>
 </div>
