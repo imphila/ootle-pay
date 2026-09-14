@@ -22,8 +22,8 @@ across three components by responsibility, not by how much each one hides:
 
 | Layer | Contract | Handles |
 |---|---|---|
-| Merchant accountability | `merchant_registry` | Stake-gated registration, tiering, slashing |
-| One-off products | `storefront` | Product listings, orders, per-product revenue |
+| Merchant accountability | `merchant_registry` | Stake-gated registration, tiering, slashing, dispute resolution |
+| One-off products | `storefront` | Product listings, orders, per-product revenue, refunds |
 | Subscriptions | `subscription` | Recurring plans, billing periods, per-plan revenue |
 
 An earlier iteration of this project tried to also hide the *customer's* identity at the contract
@@ -44,8 +44,8 @@ stake-based merchant accountability** instead of a centralized approval process.
                                     ┌─────────────────────────┴─────────────────────────┐
                                     ▼                                                     ▼
                                storefront                                          subscription
-        customer ── buys a product ──▶ OrderPlaced{product, buyer, amount}   customer ── pays a plan's price ──▶
-                                        revenue accrues in a per-product vault              SubscriptionRenewed{plan, subscriber, period}
+        customer ── buys a product ──▶ OrderPlaced{product_id, merchant, buyer, amount, order_number}   customer ── pays a plan's price ──▶
+                                        revenue accrues in a per-product vault              SubscriptionRenewed{plan_id, subscriber, paid_until_period}
                                         merchant calls claim_revenue()                       revenue accrues per plan; merchant claims it
 ```
 
@@ -214,25 +214,37 @@ event, not a real historical timestamp — documented in the app's own UI, not s
 `app/` is a small, dependency-free static site (four pages, no build step) that drives all three
 contracts against the deployed components above:
 
-- **`index.html`** — overview and links to the other pages.
+- **`index.html`** — overview and links to `merchant.html`/`pay.html` (not `admin.html`, which is
+  kept off the public nav since it's an owner-only page). Note: its "Live on the esme testnet" proof
+  section still shows addresses/transactions from the deployment *before* the refund/dispute
+  redeployment below — illustrative only, not the live components the other three pages use.
 - **`merchant.html`** — the merchant console: register/stake (with the real Basic/Standard/Premium
   thresholds shown, read from `get_min_stake` rather than hardcoded), create products and
   subscription plans (names go into the `ProductCreated`/`PlanCreated` events, so anyone reading the
   chain sees them — nothing merchant-identifying is kept off-chain), request or cancel an exit
   (with your current status — active, or exit requested and pending owner review — always visible),
-  and a dashboard of orders and revenue (today / this month / all-time) sourced from the public
-  indexer's event log.
+  a **Refund requests** card (approve — full or partial, into a buyer's account address you supply —
+  or deny, with a reason, every pending `request_refund` against your products), and a dashboard of
+  orders and revenue (today / this month / all-time) sourced from the public indexer's event log.
 - **`pay.html`** — the customer-facing storefront. `pay.html?id=<merchant public key>` loads that
   merchant's shop directly (products and plans read straight from the chain, price shown read-only,
   nothing to type, merchant's stake and tier shown up front, a warning if they've requested exit);
   with no `id` it lists every active registered merchant (stake and tier included) to browse
-  instead. Can buy/subscribe as any account in the connected wallet, not just its default one.
+  instead. Can buy/subscribe as any account in the connected wallet, not just its default one. A
+  **"Your orders here"** section on each shop page lets the connected buyer request a refund on any
+  of their orders (with a reason) and shows its live status — pending, denied (with the merchant's
+  reason and a note to escalate to the platform admin), partially, or fully refunded.
 - **`admin.html`** — owner-only registry dashboard: who's registered, their stake and tier, and the
-  owner-gated actions. Merchants with a pending exit request get an Approve (`finalize_exit`,
-  returns their stake) or Deny (`reject_exit`, confiscates it — a reason is required and recorded
-  on-chain) choice, plus `slash`/`withdraw_treasury`. Connecting a wallet that isn't the registry's
-  owner still shows the same read-only stats (they're public — anyone querying the indexer sees the
-  same thing) but the owner-gated actions will be rejected on-chain.
+  owner-gated actions. Merchants with a pending exit request get an Approve (`finalize_exit`, needs
+  the merchant's account address to return their stake into) or Deny (`reject_exit`, confiscates it
+  — a reason is required and recorded on-chain) choice, plus `slash`/`withdraw_treasury`. A
+  **Disputes** card lists every refund the merchant denied, cross-checked live against
+  `get_order_info` so one the merchant later approved anyway drops off; the owner can **Resolve**
+  (`resolve_dispute` — slashes the merchant's stake and pays it straight to a buyer account you
+  supply) or **Dismiss** (`dismiss_dispute` — records a ruling for the merchant, no funds move).
+  Connecting a wallet that isn't the registry's owner still shows the same read-only stats (they're
+  public — anyone querying the indexer sees the same thing) but the owner-gated actions will be
+  rejected on-chain.
 
 To run it:
 
@@ -323,6 +335,17 @@ templates above were built and published with `tari publish`).
 - `slash()` deposits confiscated stake into a treasury rather than burning it, since a
   deployer-supplied `stake_resource` (e.g. the network's native token) generally isn't created with
   a `burnable` rule this registry controls.
+- Refunds and disputes exist only for `storefront`. `subscription` has no `request_refund`/
+  `approve_refund`/`deny_refund` equivalent and emits no `RefundRequested`/`RefundDenied` events, so
+  a bad subscription charge has no path back — not even through `admin.html`'s Disputes card, which
+  only reads storefront events. `merchant_registry.resolve_dispute`/`dismiss_dispute` are generic
+  enough to arbitrate a subscription dispute too, but nothing in the app surfaces one.
+- The link between a `resolve_dispute`/`dismiss_dispute` ruling and the storefront order it's about
+  is an off-chain convention, not something the contract enforces: `admin.html` requires the
+  arbiter's `reason` string to start with a literal `[order <product_id>/<order_id>]` tag so it can
+  match a ruling back to the dispute it resolved (the registry method itself takes no order
+  reference). A ruling made without that tag — e.g. a direct manifest call bypassing the UI — won't
+  be recognized as resolved, and the dispute will keep reappearing in `admin.html`'s list.
 - The deployment above used `--authentication none` and a broad "Admin"-permission session token,
   appropriate only for this disposable testnet demo wallet.
 
